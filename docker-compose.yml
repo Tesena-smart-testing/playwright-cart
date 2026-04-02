@@ -1,0 +1,25 @@
+services:
+  server:
+    build:
+      context: ./packages/server
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - reports_data:/app/data
+    environment:
+      PORT: "3001"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./packages/web
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  reports_data:
