@@ -22,7 +22,7 @@ app.use('/reports/*', async (c, next) => {
     c.header('Cache-Control', 'public, max-age=604800')
   }
 })
-app.use('/reports/*', serveStatic({ root: './data' }))
+app.use('/reports/*', serveStatic({ root: process.env.DATA_DIR ?? './data' }))
 
 const port = Number(process.env.PORT ?? 3001)
 
