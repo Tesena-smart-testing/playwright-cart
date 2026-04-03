@@ -180,3 +180,48 @@ describe('POST /api/runs/:runId/complete', () => {
     expect(run?.completedAt).toBe('2026-04-02T10:05:00.000Z')
   })
 })
+
+describe('GET /api/runs/:runId/tests/:testId', () => {
+  it('returns 404 when run does not exist', async () => {
+    const res = await runs.request('/no-such-run/tests/test-1')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when test does not exist', async () => {
+    storage.createRun({
+      runId: 'run-1',
+      project: 'p',
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'running',
+    })
+    const res = await runs.request('/run-1/tests/no-such-test')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns the test record', async () => {
+    storage.createRun({
+      runId: 'run-1',
+      project: 'p',
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'running',
+    })
+    const test: storage.TestRecord = {
+      testId: 'my-test',
+      title: 'my test',
+      titlePath: ['suite', 'my test'],
+      location: { file: 'a.spec.ts', line: 1, column: 1 },
+      status: 'passed',
+      duration: 100,
+      errors: [],
+      retry: 0,
+      annotations: [],
+      attachments: [],
+    }
+    storage.writeTestResult('run-1', test)
+    const res = await runs.request('/run-1/tests/my-test')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as storage.TestRecord
+    expect(body.testId).toBe('my-test')
+    expect(body.title).toBe('my test')
+  })
+})

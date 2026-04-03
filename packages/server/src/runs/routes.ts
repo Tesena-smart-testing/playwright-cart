@@ -38,6 +38,15 @@ runs.get('/:runId', (c) => {
   return c.json({ ...run, tests })
 })
 
+runs.get('/:runId/tests/:testId', (c) => {
+  const { runId, testId } = c.req.param()
+  const run = storage.getRun(runId)
+  if (!run) return c.json({ error: 'Not found' }, 404)
+  const test = storage.getTestResult(runId, testId)
+  if (!test) return c.json({ error: 'Not found' }, 404)
+  return c.json(test)
+})
+
 runs.post('/:runId/complete', async (c) => {
   const { completedAt, status } = await c.req.json<{
     completedAt: string

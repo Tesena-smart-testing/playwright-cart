@@ -73,6 +73,12 @@ export function writeTestResult(runId: string, test: TestRecord): void {
   )
 }
 
+export function getTestResult(runId: string, testId: string): TestRecord | null {
+  const path = join(storageConfig.dataDir, runId, 'tests', `${testId}.json`)
+  if (!existsSync(path)) return null
+  return JSON.parse(readFileSync(path, 'utf-8')) as TestRecord
+}
+
 export function getTestResults(runId: string): TestRecord[] {
   const dir = join(storageConfig.dataDir, runId, 'tests')
   if (!existsSync(dir)) return []
