@@ -1,8 +1,8 @@
 services:
   server:
     build:
-      context: ./packages/server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: packages/server/Dockerfile
     ports:
       - "3001:3001"
     volumes:
@@ -23,8 +23,8 @@ services:
 
   web:
     build:
-      context: ./packages/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: packages/web/Dockerfile
     ports:
       - "80:80"
     depends_on:
