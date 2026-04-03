@@ -1,0 +1,17 @@
+{
+  "name": "@playwright-cart/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "pretest": "pnpm --filter @playwright-cart/reporter build",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "@playwright-cart/reporter": "workspace:*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "serve": "^14.2.4"
+  }
+}
