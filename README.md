@@ -154,6 +154,7 @@ All endpoints are under the server (default: `http://localhost:3001`).
 | `POST` | `/api/runs` | Create a new run — returns `{ runId }` |
 | `GET` | `/api/runs` | List all runs, newest first |
 | `GET` | `/api/runs/:runId` | Run record with all test results |
+| `GET` | `/api/runs/:runId/tests/:testId` | Fetch a single test result |
 | `POST` | `/api/runs/:runId/tests` | Upload a single test result (multipart) |
 | `POST` | `/api/runs/:runId/report` | Upload zipped HTML report |
 | `POST` | `/api/runs/:runId/complete` | Mark run complete (no HTML report) |
