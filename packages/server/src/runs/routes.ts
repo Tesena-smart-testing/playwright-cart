@@ -1,5 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import AdmZip from 'adm-zip'
 import { Hono } from 'hono'
 import * as storage from './storage.js'
 
@@ -62,4 +63,21 @@ runs.post('/:runId/tests', async (c) => {
 
   storage.writeTestResult(c.req.param('runId'), metadata)
   return c.json({ testId: metadata.testId }, 201)
+})
+
+runs.post('/:runId/report', async (c) => {
+  const runId = c.req.param('runId')
+  const body = await c.req.parseBody()
+  const reportFile = body['report'] as File
+  const completedAt = body['completedAt'] as string
+  const status = body['status'] as storage.RunRecord['status']
+
+  const zipBuf = Buffer.from(await reportFile.arrayBuffer())
+  const zip = new AdmZip(zipBuf)
+  zip.extractAllTo(storage.getReportDir(runId), true)
+
+  const reportUrl = `/reports/${runId}/index.html`
+  storage.updateRun(runId, { completedAt, status, reportUrl })
+
+  return c.json({ reportUrl })
 })

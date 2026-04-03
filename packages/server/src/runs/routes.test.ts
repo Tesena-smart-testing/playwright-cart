@@ -138,6 +138,34 @@ describe('POST /api/runs/:runId/tests', () => {
   })
 })
 
+describe('POST /api/runs/:runId/report', () => {
+  it('extracts zip, sets reportUrl, updates run status', async () => {
+    const AdmZip = (await import('adm-zip')).default
+    storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-02T10:00:00.000Z', status: 'running' })
+
+    const zip = new AdmZip()
+    zip.addFile('index.html', Buffer.from('<html>Report</html>'))
+    const zipBuf = zip.toBuffer()
+
+    const form = new FormData()
+    form.append('report', new Blob([zipBuf], { type: 'application/zip' }), 'report.zip')
+    form.append('completedAt', '2026-04-02T10:05:00.000Z')
+    form.append('status', 'passed')
+
+    const res = await runs.request('/run-1/report', { method: 'POST', body: form })
+    expect(res.status).toBe(200)
+
+    const { reportUrl } = (await res.json()) as { reportUrl: string }
+    expect(reportUrl).toBe('/reports/run-1/index.html')
+
+    const run = storage.getRun('run-1')
+    expect(run?.status).toBe('passed')
+    expect(run?.reportUrl).toBe('/reports/run-1/index.html')
+
+    expect(existsSync(join(testDir, 'run-1', 'report', 'index.html'))).toBe(true)
+  })
+})
+
 describe('POST /api/runs/:runId/complete', () => {
   it('updates run status and completedAt', async () => {
     storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-02T10:00:00.000Z', status: 'running' })
