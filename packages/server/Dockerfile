@@ -17,10 +17,11 @@ RUN pnpm --filter @playwright-cart/server run build
 
 # ---- runtime ----
 FROM node:24-alpine AS runtime
-WORKDIR /app
+WORKDIR /app/packages/server
 ENV NODE_ENV=production
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/node_modules /app/node_modules
+COPY --from=deps /app/packages/server/node_modules ./node_modules
 COPY --from=build /app/packages/server/dist ./dist
 COPY packages/server/package.json ./
 
