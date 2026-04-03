@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* ── TokyoNight Dark (default) ──────────────────── */
+:root {
+  --tn-bg:        #1a1b26;
+  --tn-panel:     #16161e;
+  --tn-highlight: #292e42;
+  --tn-fg:        #c0caf5;
+  --tn-muted:     #565f89;
+  --tn-blue:      #7aa2f7;
+  --tn-purple:    #bb9af7;
+  --tn-green:     #9ece6a;
+  --tn-red:       #f7768e;
+  --tn-yellow:    #e0af68;
+  --tn-border:    #292e42;
+}
+
+/* ── TokyoNight Day ─────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --tn-bg:        #e1e2e7;
+    --tn-panel:     #d0d5e3;
+    --tn-highlight: #c4c8da;
+    --tn-fg:        #3760bf;
+    --tn-muted:     #848cb5;
+    --tn-blue:      #2e7de9;
+    --tn-purple:    #9854f1;
+    --tn-green:     #587539;
+    --tn-red:       #f52a65;
+    --tn-yellow:    #8c6c3e;
+    --tn-border:    #c4c8da;
+  }
+}
+
+:root[data-theme="light"] {
+  --tn-bg:        #e1e2e7;
+  --tn-panel:     #d0d5e3;
+  --tn-highlight: #c4c8da;
+  --tn-fg:        #3760bf;
+  --tn-muted:     #848cb5;
+  --tn-blue:      #2e7de9;
+  --tn-purple:    #9854f1;
+  --tn-green:     #587539;
+  --tn-red:       #f52a65;
+  --tn-yellow:    #8c6c3e;
+  --tn-border:    #c4c8da;
+}
+
+:root[data-theme="dark"] {
+  --tn-bg:        #1a1b26;
+  --tn-panel:     #16161e;
+  --tn-highlight: #292e42;
+  --tn-fg:        #c0caf5;
+  --tn-muted:     #565f89;
+  --tn-blue:      #7aa2f7;
+  --tn-purple:    #bb9af7;
+  --tn-green:     #9ece6a;
+  --tn-red:       #f7768e;
+  --tn-yellow:    #e0af68;
+  --tn-border:    #292e42;
+}
+
+/* ── Register with Tailwind v4 ──────────────────── */
+@theme inline {
+  --color-tn-bg:        var(--tn-bg);
+  --color-tn-panel:     var(--tn-panel);
+  --color-tn-highlight: var(--tn-highlight);
+  --color-tn-fg:        var(--tn-fg);
+  --color-tn-muted:     var(--tn-muted);
+  --color-tn-blue:      var(--tn-blue);
+  --color-tn-purple:    var(--tn-purple);
+  --color-tn-green:     var(--tn-green);
+  --color-tn-red:       var(--tn-red);
+  --color-tn-yellow:    var(--tn-yellow);
+  --color-tn-border:    var(--tn-border);
+}
+
+/* ── Base ────────────────────────────────────────── */
+body {
+  background-color: var(--tn-bg);
+  color: var(--tn-fg);
+}
