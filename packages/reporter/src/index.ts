@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
+import stripAnsi from 'strip-ansi'
 import type {
   FullConfig,
   FullResult,
@@ -106,7 +107,10 @@ export class PlaywrightCartReporter implements Reporter {
         location: test.location,
         status: result.status,
         duration: result.duration,
-        errors: result.errors.map((e) => ({ message: e.message ?? '', stack: e.stack })),
+        errors: result.errors.map((e) => ({
+          message: stripAnsi(e.message ?? ''),
+          stack: e.stack ? stripAnsi(e.stack) : undefined,
+        })),
         retry: result.retry,
         annotations: test.annotations,
         attachments: attachmentMeta,

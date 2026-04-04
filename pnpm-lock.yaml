@@ -45,6 +45,9 @@ importers:
       archiver:
         specifier: ^7.0.1
         version: 7.0.1
+      strip-ansi:
+        specifier: ^7.2.0
+        version: 7.2.0
     devDependencies:
       '@playwright/test':
         specifier: ^1.49.0
