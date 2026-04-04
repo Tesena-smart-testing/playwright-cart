@@ -1,21 +1,33 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { closeDb } from '../db/client.js'
+import { runMigrations } from '../db/migrate.js'
+import { resetDb } from '../db/test-utils.js'
 import { runEmitter } from '../events.js'
 import { runs } from './routes.js'
 import * as storage from './storage.js'
 
 let testDir: string
 
-beforeEach(() => {
+beforeAll(async () => {
+  await runMigrations()
+})
+
+beforeEach(async () => {
   testDir = join(tmpdir(), `pct-routes-test-${Date.now()}`)
   mkdirSync(testDir, { recursive: true })
   storage.storageConfig.dataDir = testDir
+  await resetDb()
 })
 
 afterEach(() => {
   rmSync(testDir, { recursive: true, force: true })
+})
+
+afterAll(async () => {
+  await closeDb()
 })
 
 describe('POST /api/runs', () => {
@@ -28,7 +40,7 @@ describe('POST /api/runs', () => {
     expect(res.status).toBe(201)
     const { runId } = (await res.json()) as { runId: string }
     expect(runId).toMatch(/^my-app-\d+$/)
-    expect(storage.getRun(runId)).not.toBeNull()
+    expect(await storage.getRun(runId)).not.toBeNull()
   })
 
   it('includes branch and commitSha when provided', async () => {
@@ -43,7 +55,7 @@ describe('POST /api/runs', () => {
       }),
     })
     const { runId } = (await res.json()) as { runId: string }
-    const run = storage.getRun(runId)
+    const run = await storage.getRun(runId)
     expect(run?.branch).toBe('main')
     expect(run?.commitSha).toBe('abc123')
   })
@@ -68,7 +80,7 @@ describe('GET /api/runs', () => {
   })
 
   it('returns existing runs', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -88,13 +100,13 @@ describe('GET /api/runs/:runId', () => {
   })
 
   it('returns run with test results', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
-    storage.writeTestResult('run-1', {
+    await storage.writeTestResult('run-1', {
       testId: 'my-test',
       title: 'my test',
       titlePath: ['my test'],
@@ -116,7 +128,7 @@ describe('GET /api/runs/:runId', () => {
 
 describe('POST /api/runs/:runId/tests', () => {
   it('saves test metadata and returns 201', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -138,12 +150,13 @@ describe('POST /api/runs/:runId/tests', () => {
     form.append('metadata', JSON.stringify(metadata))
     const res = await runs.request('/run-1/tests', { method: 'POST', body: form })
     expect(res.status).toBe(201)
-    expect(storage.getTestResults('run-1')).toHaveLength(1)
-    expect(storage.getTestResults('run-1')[0].testId).toBe('suite--my-test')
+    const results = await storage.getTestResults('run-1')
+    expect(results).toHaveLength(1)
+    expect(results[0].testId).toBe('suite--my-test')
   })
 
   it('saves attachment files to disk', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -176,7 +189,7 @@ describe('POST /api/runs/:runId/tests', () => {
   })
 
   it('emits run:updated after saving a test', async () => {
-    storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
+    await storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
     const spy = vi.spyOn(runEmitter, 'emit')
     const metadata: storage.TestRecord = {
       testId: 'suite--my-test',
@@ -201,7 +214,7 @@ describe('POST /api/runs/:runId/tests', () => {
 describe('POST /api/runs/:runId/report', () => {
   it('extracts zip, sets reportUrl, updates run status', async () => {
     const AdmZip = (await import('adm-zip')).default
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -223,7 +236,7 @@ describe('POST /api/runs/:runId/report', () => {
     const { reportUrl } = (await res.json()) as { reportUrl: string }
     expect(reportUrl).toBe('/reports/run-1/report/index.html')
 
-    const run = storage.getRun('run-1')
+    const run = await storage.getRun('run-1')
     expect(run?.status).toBe('passed')
     expect(run?.reportUrl).toBe('/reports/run-1/report/index.html')
 
@@ -232,7 +245,7 @@ describe('POST /api/runs/:runId/report', () => {
 
   it('emits run:updated after uploading a report', async () => {
     const AdmZip = (await import('adm-zip')).default
-    storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
+    await storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
     const spy = vi.spyOn(runEmitter, 'emit')
 
     const zip = new AdmZip()
@@ -250,7 +263,7 @@ describe('POST /api/runs/:runId/report', () => {
 
 describe('POST /api/runs/:runId/complete', () => {
   it('updates run status and completedAt', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -262,13 +275,13 @@ describe('POST /api/runs/:runId/complete', () => {
       body: JSON.stringify({ completedAt: '2026-04-02T10:05:00.000Z', status: 'passed' }),
     })
     expect(res.status).toBe(200)
-    const run = storage.getRun('run-1')
+    const run = await storage.getRun('run-1')
     expect(run?.status).toBe('passed')
     expect(run?.completedAt).toBe('2026-04-02T10:05:00.000Z')
   })
 
   it('emits run:updated after completing a run', async () => {
-    storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
+    await storage.createRun({ runId: 'run-1', project: 'p', startedAt: '2026-04-04T10:00:00.000Z', status: 'running' })
     const spy = vi.spyOn(runEmitter, 'emit')
     await runs.request('/run-1/complete', {
       method: 'POST',
@@ -287,7 +300,7 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
   })
 
   it('returns 404 when test does not exist', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -298,7 +311,7 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
   })
 
   it('returns the test record', async () => {
-    storage.createRun({
+    await storage.createRun({
       runId: 'run-1',
       project: 'p',
       startedAt: '2026-04-02T10:00:00.000Z',
@@ -316,7 +329,7 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
       annotations: [],
       attachments: [],
     }
-    storage.writeTestResult('run-1', test)
+    await storage.writeTestResult('run-1', test)
     const res = await runs.request('/run-1/tests/my-test')
     expect(res.status).toBe(200)
     const body = (await res.json()) as storage.TestRecord

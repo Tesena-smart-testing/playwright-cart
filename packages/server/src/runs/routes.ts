@@ -24,27 +24,28 @@ runs.post('/', async (c) => {
     startedAt: body.startedAt,
     status: 'running',
   }
-  storage.createRun(run)
+  await storage.createRun(run)
   runEmitter.emit('event', { type: 'run:created', runId } satisfies RunEvent)
   return c.json({ runId }, 201)
 })
 
-runs.get('/', (c) => {
-  return c.json(storage.listRuns())
+runs.get('/', async (c) => {
+  return c.json(await storage.listRuns())
 })
 
-runs.get('/:runId', (c) => {
-  const run = storage.getRun(c.req.param('runId'))
+runs.get('/:runId', async (c) => {
+  const runId = c.req.param('runId')
+  const run = await storage.getRun(runId)
   if (!run) return c.json({ error: 'Not found' }, 404)
-  const tests = storage.getTestResults(c.req.param('runId'))
+  const tests = await storage.getTestResults(runId)
   return c.json({ ...run, tests })
 })
 
-runs.get('/:runId/tests/:testId', (c) => {
+runs.get('/:runId/tests/:testId', async (c) => {
   const { runId, testId } = c.req.param()
-  const run = storage.getRun(runId)
+  const run = await storage.getRun(runId)
   if (!run) return c.json({ error: 'Not found' }, 404)
-  const test = storage.getTestResult(runId, testId)
+  const test = await storage.getTestResult(runId, testId)
   if (!test) return c.json({ error: 'Not found' }, 404)
   return c.json(test)
 })
@@ -55,7 +56,7 @@ runs.post('/:runId/complete', async (c) => {
     completedAt: string
     status: storage.RunRecord['status']
   }>()
-  storage.updateRun(runId, { completedAt, status })
+  await storage.updateRun(runId, { completedAt, status })
   runEmitter.emit('event', { type: 'run:updated', runId } satisfies RunEvent)
   return c.json({})
 })
@@ -75,7 +76,7 @@ runs.post('/:runId/tests', async (c) => {
     }
   }
 
-  storage.writeTestResult(runId, metadata)
+  await storage.writeTestResult(runId, metadata)
   runEmitter.emit('event', { type: 'run:updated', runId } satisfies RunEvent)
   return c.json({ testId: metadata.testId }, 201)
 })
@@ -92,7 +93,7 @@ runs.post('/:runId/report', async (c) => {
   zip.extractAllTo(storage.getReportDir(runId), true)
 
   const reportUrl = `/reports/${runId}/report/index.html`
-  storage.updateRun(runId, { completedAt, status, reportUrl })
+  await storage.updateRun(runId, { completedAt, status, reportUrl })
   runEmitter.emit('event', { type: 'run:updated', runId } satisfies RunEvent)
 
   return c.json({ reportUrl })
