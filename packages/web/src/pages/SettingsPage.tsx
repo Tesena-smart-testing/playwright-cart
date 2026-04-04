@@ -18,6 +18,7 @@ import {
 } from '../lib/api.js'
 import { applyTheme } from '../lib/theme.js'
 import type { Theme } from '../lib/theme.js'
+import { useTheme } from '../hooks/useTheme.js'
 
 type Tab = 'account' | 'admin'
 
@@ -79,7 +80,6 @@ function AccountTab({ user }: { user: { id: number; username: string; theme: The
       />
       <ChangePasswordForm />
       <ThemeSelector
-        currentTheme={user.theme}
         onThemeChange={() => queryClient.invalidateQueries({ queryKey: ['me'] })}
       />
     </div>
@@ -230,13 +230,8 @@ function ChangePasswordForm() {
   )
 }
 
-function ThemeSelector({
-  currentTheme,
-  onThemeChange,
-}: {
-  currentTheme: Theme
-  onThemeChange: () => void
-}) {
+function ThemeSelector({ onThemeChange }: { onThemeChange: () => void }) {
+  const { theme: currentTheme } = useTheme()
   const themes: { value: Theme; label: string; glyph: string }[] = [
     { value: 'dark', label: 'Dark', glyph: '◑' },
     { value: 'light', label: 'Light', glyph: '○' },

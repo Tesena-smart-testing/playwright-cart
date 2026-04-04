@@ -17,6 +17,7 @@ export function applyTheme(theme: Theme): void {
     root.setAttribute('data-theme', theme)
     localStorage.setItem('theme', theme)
   }
+  window.dispatchEvent(new CustomEvent('theme-changed', { detail: theme }))
 }
 
 export function cycleTheme(current: Theme): Theme {

@@ -24,7 +24,7 @@ const NAV_LINKS = [
 ]
 
 export default function TopNav() {
-  const { theme, toggle } = useTheme()
+  const { theme } = useTheme()
   const { user } = useCurrentUser()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -53,10 +53,11 @@ export default function TopNav() {
 
   function handleThemeToggle() {
     const nextTheme = cycleTheme(theme)
-    applyTheme(nextTheme)
-    toggle()
+    applyTheme(nextTheme) // fires 'theme-changed' event → all useTheme() instances update
     if (user) {
-      updateMe({ theme: nextTheme }).catch(() => {})
+      updateMe({ theme: nextTheme })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+        .catch(() => {})
     }
   }
 
