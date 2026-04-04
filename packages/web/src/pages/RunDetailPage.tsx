@@ -65,7 +65,7 @@ export default function RunDetailPage() {
 function buildSuiteTree(tests: TestRecord[]): Map<string, SuiteTreeNode> {
   const root = new Map<string, SuiteTreeNode>()
   for (const test of tests) {
-    const path = test.titlePath.slice(0, -1)
+    const path = test.titlePath.slice(0, -1).filter((p) => p !== '')
     const effectivePath = path.length > 0 ? path : ['Uncategorized']
     insertIntoTree(root, effectivePath, test)
   }
