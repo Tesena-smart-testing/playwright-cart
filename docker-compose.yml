@@ -32,8 +32,11 @@ services:
       PORT: "${PORT:-3001}"
       DATA_DIR: "${DATA_DIR:-/app/data}"
       DATABASE_URL: "${DATABASE_URL:-postgresql://playwright_cart:playwright_cart@postgres:5432/playwright_cart}"
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme123}"
+      JWT_SECRET: "${JWT_SECRET:-change-this-secret-in-production}"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/runs"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -14,10 +14,11 @@ import { usersRouter } from './users/routes.js'
 
 export const app = new Hono<HonoEnv>()
 
-const PUBLIC_PATHS = new Set(['/api/auth/login'])
+const PUBLIC_PATHS = new Set(['/api/auth/login', '/api/health'])
 
 app.use('*', logger())
 app.use('/api/*', cors())
+app.get('/api/health', (c) => c.json({ ok: true }))
 app.route('/api/auth', authRouter)
 app.use('/api/*', async (c, next) => {
   if (PUBLIC_PATHS.has(c.req.path)) return next()
