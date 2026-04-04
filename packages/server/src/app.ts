@@ -8,6 +8,7 @@ import { authRouter } from './auth/routes.js'
 import type { HonoEnv } from './auth/types.js'
 import { type RunEvent, runEmitter } from './events.js'
 import { runs } from './runs/routes.js'
+import { usersRouter } from './users/routes.js'
 
 export const app = new Hono<HonoEnv>()
 
@@ -37,6 +38,7 @@ app.get('/api/events', (c) =>
 )
 
 app.route('/api/runs', runs)
+app.route('/api/users', usersRouter)
 
 app.use('/reports/*', cors())
 app.use('/reports/*', async (c, next) => {
