@@ -48,6 +48,47 @@ To run in the background:
 docker compose up --build -d
 ```
 
+## Authentication
+
+### First login
+
+On first startup the server creates a default admin account from the `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables (defaults: `admin` / `changeme123`). Open `http://localhost` and log in with those credentials.
+
+> **Important:** Change the default password (and `JWT_SECRET`) before exposing the instance to a network.
+
+### Roles
+
+| Role | Capabilities |
+|---|---|
+| `admin` | Manage users, create/revoke API keys, configure settings, view all runs |
+| `user` | View all runs, update own username/password/theme |
+
+### Session auth (browser)
+
+The web UI authenticates via username + password. A successful login sets an HTTP-only JWT cookie (`auth_token`, 8-hour expiry). The cookie is sent automatically on every subsequent request.
+
+### API key auth (CI/CD / reporter)
+
+Admins can create API keys in **Settings → API Keys**. The raw key is shown only once — store it securely. Pass it as a Bearer token on any API request:
+
+```
+Authorization: Bearer <key>
+```
+
+API keys are hashed with SHA256 before storage and can be revoked at any time.
+
+### Reporter authentication
+
+If your playwright-cart instance requires authentication, pass the API key in the reporter config:
+
+```ts
+['@playwright-cart/reporter', {
+  serverUrl: 'http://your-instance:3001',
+  project: 'my-app',
+  apiKey: process.env.PLAYWRIGHT_CART_API_KEY,
+}]
+```
+
 ## Reporter Setup
 
 Install the reporter in your Playwright project:
@@ -87,6 +128,10 @@ Environment variables for the server (set in `.env` or your CI environment):
 | `PORT` | `3001` | Port the server listens on |
 | `DATABASE_URL` | *(required)* | PostgreSQL connection string. In Docker Compose this is set automatically. For local dev, copy `.env.example` to `.env` and point at your local instance. |
 | `DATA_DIR` | `/app/data` | Directory for binary files: test attachments and extracted HTML reports |
+| `ADMIN_USERNAME` | `admin` | Username for the initial admin account (created on first startup if no users exist) |
+| `ADMIN_PASSWORD` | `changeme123` | Password for the initial admin account — **change this in production** |
+| `JWT_SECRET` | *(insecure default)* | Secret used to sign JWT session tokens. Generate a strong value with `openssl rand -hex 32`. **Must be set in production.** |
+| `NODE_ENV` | `development` | Set to `production` to enable secure (HTTPS-only) cookies |
 
 > **Note:** `DATABASE_URL` is automatically set when using `docker compose up`. For local development without Docker, you need a running PostgreSQL instance and `DATABASE_URL` set in your environment or `.env`.
 
@@ -210,6 +255,41 @@ docker compose down -v       # stop containers AND delete all run data
 
 All endpoints are under the server (default: `http://localhost:3001`).
 
+### Auth
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | — | Login with username + password; sets HTTP-only JWT cookie |
+| `POST` | `/api/auth/logout` | session | Logout; clears the cookie |
+| `GET` | `/api/auth/me` | session | Current user `{ id, username, role, theme }` |
+
+### User management
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/users` | admin | List all users |
+| `POST` | `/api/users` | admin | Create a user `{ username, password, role }` |
+| `PATCH` | `/api/users/me` | session | Update own username / password / theme |
+| `PATCH` | `/api/users/:userId` | admin | Change a user's role |
+| `DELETE` | `/api/users/:userId` | admin | Delete a user |
+
+### API keys
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/api-keys` | admin | List API keys (masked) |
+| `POST` | `/api/api-keys` | admin | Create a key `{ label }` — raw key returned once only |
+| `DELETE` | `/api/api-keys/:id` | admin | Revoke an API key |
+
+### Settings
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/settings` | — | Get settings `{ data_retention_days }` |
+| `PATCH` | `/api/settings` | admin | Update settings |
+
+### Test runs (used by reporter — public)
+
 | Method | Path | Description |
 |---|---|---|
 | `POST` | `/api/runs` | Create a new run — returns `{ runId }` |
@@ -219,7 +299,13 @@ All endpoints are under the server (default: `http://localhost:3001`).
 | `POST` | `/api/runs/:runId/tests` | Upload a single test result (multipart) |
 | `POST` | `/api/runs/:runId/report` | Upload zipped HTML report |
 | `POST` | `/api/runs/:runId/complete` | Mark run complete (no HTML report) |
-| `GET` | `/reports/*` | Serve extracted static report files |
+
+### Other
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/reports/*` | — | Serve extracted static report files |
+| `GET` | `/api/health` | — | Health check — returns `{ ok: true }` |
 
 ## Docker Details
 

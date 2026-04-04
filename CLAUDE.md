@@ -61,23 +61,45 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
         project: 'my-app',
         branch: process.env.BRANCH,
         commitSha: process.env.COMMIT_SHA,
+        apiKey: process.env.PLAYWRIGHT_CART_API_KEY, // optional: Bearer token for auth
       }],
     ],
   })
   ```
 
 **`packages/server`** — Node.js REST API using [Hono](https://hono.dev) + `@hono/node-server`
-- `POST /api/runs` — create a new run, returns `{ runId }`
-- `GET /api/runs` — list all runs (sorted newest-first)
-- `GET /api/runs/:runId` — run record + all test results
-- `POST /api/runs/:runId/tests` — upload a single test result with attachments (multipart)
-- `POST /api/runs/:runId/report` — upload zipped HTML report, extracts and links it
-- `POST /api/runs/:runId/complete` — mark run complete without an HTML report
-- `GET /reports/*` — serves extracted static report files (`Service-Worker-Allowed` + cache headers required for Playwright trace viewer)
-- Uses **Drizzle ORM** + PostgreSQL for structured data: `runs`, `tests`, `test_errors`, `test_annotations`, `test_attachments` tables
+- Uses **Drizzle ORM** + PostgreSQL for structured data
 - Binary files (screenshots, traces, extracted HTML reports) remain on disk at `{DATA_DIR}/{runId}/attachments/` and `{DATA_DIR}/{runId}/report/`
 - Runs DB migrations at startup via `src/db/migrate.ts` (Drizzle migrate)
-- Env vars: `DATABASE_URL` (required), `DATA_DIR` (default `./data`), `PORT` (default `3001`)
+- Env vars: `DATABASE_URL` (required), `DATA_DIR` (default `./data`), `PORT` (default `3001`), `ADMIN_USERNAME` (default `admin`), `ADMIN_PASSWORD` (default `changeme123`), `JWT_SECRET` (required in production), `NODE_ENV` (`production` enables secure cookies)
+
+**DB schema** (`src/db/schema.ts`):
+- `runs` — `runId`, `project`, `branch`, `commitSha`, `startedAt`, `completedAt`, `status`, `reportUrl`
+- `tests` — `id`, `testId`, `runId` (FK), `title`, `titlePath`, `locationFile/Line/Col`, `status`, `durationMs`, `retry`
+- `test_errors` — `id`, `testPk` (FK), `position`, `message`, `stack`
+- `test_annotations` — `id`, `testPk` (FK), `position`, `type`, `description`
+- `test_attachments` — `id`, `testPk` (FK), `position`, `name`, `contentType`, `filename`
+- `users` — `id`, `username` (unique), `passwordHash` (bcrypt), `role` (admin|user), `theme` (dark|light|system)
+- `api_keys` — `id`, `keyHash` (SHA256, unique), `label`, `createdBy` (FK → users)
+- `app_settings` — `key` (PK), `value` (currently stores `data_retention_days`)
+
+**Authentication** (`src/auth/`):
+- Dual auth: HTTP-only JWT cookie (`auth_token`, HS256, 8h) for browser sessions; `Authorization: Bearer <key>` API keys for CI/CD
+- Roles: `admin` (full control) and `user` (self-service only)
+- Middleware: `authMiddleware` (requires any auth), `adminMiddleware` (requires admin role)
+- Public paths (no auth): `POST /api/auth/login`, `GET /api/health`, all `/api/runs/*`, `GET /api/settings`
+- Admin bootstrap: on startup, `src/db/seed.ts` creates the default admin from `ADMIN_USERNAME`/`ADMIN_PASSWORD` env vars (idempotent)
+- API keys: 32-byte random hex generated, SHA256-hashed before DB storage, raw key shown only at creation
+
+**Routes** (`src/app.ts`):
+- `POST /api/auth/login` / `POST /api/auth/logout` / `GET /api/auth/me` — auth (public/session/session)
+- `GET|POST /api/users` / `PATCH /api/users/me` / `PATCH|DELETE /api/users/:id` — user management (admin, except PATCH me = any user)
+- `GET|POST|DELETE /api/api-keys` — API key management (admin)
+- `GET /api/settings` / `PATCH /api/settings` — settings (public / admin)
+- `POST /api/runs` / `GET /api/runs` / `GET /api/runs/:runId` — run CRUD (public)
+- `POST /api/runs/:runId/tests` / `POST /api/runs/:runId/report` / `POST /api/runs/:runId/complete` — reporter upload (public)
+- `GET /reports/*` — static report files (public)
+- `GET /api/health` — health check (public)
 
 **`packages/web`** — React 19 + Vite frontend
 - Lists uploaded reports with project name, upload time, and test status
