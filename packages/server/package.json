@@ -16,12 +16,14 @@
   "dependencies": {
     "@hono/node-server": "^1.13.7",
     "adm-zip": "^0.5.17",
+    "bcrypt": "^6.0.0",
     "drizzle-orm": "^0.36.0",
     "hono": "^4.6.20",
     "pg": "^8.11.0"
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.10.0",
     "drizzle-kit": "^0.27.0",
