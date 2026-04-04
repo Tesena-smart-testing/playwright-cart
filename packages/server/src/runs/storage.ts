@@ -1,14 +1,8 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { and, desc, eq, inArray, lt } from 'drizzle-orm'
 import { db } from '../db/client.js'
-import {
-  testAnnotations,
-  testAttachments,
-  testErrors,
-  tests,
-  runs,
-} from '../db/schema.js'
+import { runs, testAnnotations, testAttachments, testErrors, tests } from '../db/schema.js'
 
 export const storageConfig = {
   dataDir: process.env.DATA_DIR ?? './data',
@@ -206,6 +200,32 @@ export async function getTestResults(runId: string): Promise<TestRecord[]> {
       attachments.filter((a) => a.testPk === row.id),
     ),
   )
+}
+
+// ---------- delete operations ----------
+
+export async function deleteRun(runId: string): Promise<boolean> {
+  const deleted = await db
+    .delete(runs)
+    .where(eq(runs.runId, runId))
+    .returning({ runId: runs.runId })
+  if (deleted.length === 0) return false
+  const dir = join(storageConfig.dataDir, runId)
+  rmSync(dir, { recursive: true, force: true })
+  return true
+}
+
+export async function deleteRuns(runIds: string[]): Promise<number> {
+  if (runIds.length === 0) return 0
+  const deleted = await db
+    .delete(runs)
+    .where(inArray(runs.runId, runIds))
+    .returning({ runId: runs.runId })
+  for (const { runId } of deleted) {
+    const dir = join(storageConfig.dataDir, runId)
+    rmSync(dir, { recursive: true, force: true })
+  }
+  return deleted.length
 }
 
 // ---------- filesystem helpers (binary files remain on disk) ----------

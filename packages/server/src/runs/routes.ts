@@ -2,10 +2,12 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import AdmZip from 'adm-zip'
 import { Hono } from 'hono'
+import { adminMiddleware } from '../auth/middleware.js'
+import type { HonoEnv } from '../auth/types.js'
 import { type RunEvent, runEmitter } from '../events.js'
 import * as storage from './storage.js'
 
-export const runs = new Hono()
+export const runs = new Hono<HonoEnv>()
 
 runs.post('/', async (c) => {
   const body = await c.req.json<{
@@ -97,4 +99,25 @@ runs.post('/:runId/report', async (c) => {
   runEmitter.emit('event', { type: 'run:updated', runId } satisfies RunEvent)
 
   return c.json({ reportUrl })
+})
+
+runs.delete('/:runId', adminMiddleware, async (c) => {
+  const runId = c.req.param('runId')
+  const deleted = await storage.deleteRun(runId)
+  if (!deleted) return c.json({ error: 'Not found' }, 404)
+  return c.json({ ok: true })
+})
+
+runs.post('/delete-batch', adminMiddleware, async (c) => {
+  const body = await c.req.json<{ runIds?: unknown }>()
+  const { runIds } = body
+  if (
+    !Array.isArray(runIds) ||
+    runIds.length === 0 ||
+    !runIds.every((id) => typeof id === 'string')
+  ) {
+    return c.json({ error: 'runIds must be a non-empty array of strings' }, 400)
+  }
+  const deleted = await storage.deleteRuns(runIds as string[])
+  return c.json({ deleted })
 })
