@@ -1,6 +1,6 @@
 {
-  "id": "f61196b1-5c3c-4f0c-8f63-cde7ace67b55",
-  "prevId": "9be3c5d9-4440-416b-80eb-15efb086fae1",
+  "id": "bb226b88-5c62-4269-b639-f377b05cd774",
+  "prevId": "f61196b1-5c3c-4f0c-8f63-cde7ace67b55",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -10,7 +10,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "bigserial",
           "primaryKey": true,
           "notNull": true
         },
@@ -28,7 +28,7 @@
         },
         "created_by": {
           "name": "created_by",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
@@ -40,7 +40,23 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "api_keys_key_hash_uniq": {
+          "name": "api_keys_key_hash_uniq",
+          "columns": [
+            {
+              "expression": "key_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "api_keys_created_by_users_id_fk": {
           "name": "api_keys_created_by_users_id_fk",
@@ -481,7 +497,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "bigserial",
           "primaryKey": true,
           "notNull": true
         },
@@ -502,7 +518,8 @@
           "type": "user_role",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'user'"
         },
         "theme": {
           "name": "theme",
