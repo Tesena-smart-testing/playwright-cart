@@ -6,4 +6,4 @@ export type RunEvent =
 
 class RunEventEmitter extends EventEmitter {}
 
-export const runEmitter = new RunEventEmitter()
+export const runEmitter = new RunEventEmitter().setMaxListeners(0)
