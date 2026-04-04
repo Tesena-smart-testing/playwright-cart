@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import type {
   FullConfig,
   FullResult,
@@ -88,7 +88,7 @@ export class PlaywrightCartReporter implements Reporter {
       const attachmentMeta = result.attachments.map((a) => ({
         name: a.name,
         contentType: a.contentType,
-        filename: a.path ? a.name : undefined,
+        filename: a.path ? basename(a.path) : undefined,
       }))
 
       const metadata = {
@@ -113,7 +113,7 @@ export class PlaywrightCartReporter implements Reporter {
           form.append(
             `attachment_${i}`,
             new Blob([new Uint8Array(buf)], { type: att.contentType }),
-            att.name,
+            basename(att.path),
           )
         } else if (att.body) {
           form.append(

@@ -12,6 +12,7 @@ app.use('/api/*', cors())
 
 app.route('/api/runs', runs)
 
+app.use('/reports/*', cors())
 app.use('/reports/*', async (c, next) => {
   await next()
   c.header('Service-Worker-Allowed', '/')
