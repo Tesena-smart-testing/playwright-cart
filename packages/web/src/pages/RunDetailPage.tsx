@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
+import SuiteGroup, { type SuiteTreeNode } from '../components/SuiteGroup.js'
 import RunHeader from '../components/RunHeader.js'
 import RunStats from '../components/RunStats.js'
-import SuiteGroup from '../components/SuiteGroup.js'
 import { useRun } from '../hooks/useRun.js'
 import type { TestRecord } from '../lib/api.js'
 
@@ -29,7 +29,7 @@ export default function RunDetailPage() {
 
   if (!run) return null
 
-  const suites = groupBySuite(run.tests)
+  const suites = buildSuiteTree(run.tests)
 
   return (
     <div>
@@ -46,15 +46,15 @@ export default function RunDetailPage() {
       <RunHeader run={run} />
       <RunStats tests={run.tests} />
 
-      {/* Suite groups */}
+      {/* Suite tree */}
       {run.tests.length === 0 ? (
         <p className="py-8 text-center font-mono text-sm text-tn-muted">
           No test results uploaded yet.
         </p>
       ) : (
         <div className="space-y-3">
-          {[...suites.entries()].map(([suite, tests]) => (
-            <SuiteGroup key={suite} runId={run.runId} suite={suite} tests={tests} />
+          {[...suites.entries()].map(([name, node]) => (
+            <SuiteGroup key={name} runId={run.runId} name={name} node={node} />
           ))}
         </div>
       )}
@@ -62,14 +62,29 @@ export default function RunDetailPage() {
   )
 }
 
-function groupBySuite(tests: TestRecord[]): Map<string, TestRecord[]> {
-  const map = new Map<string, TestRecord[]>()
+function buildSuiteTree(tests: TestRecord[]): Map<string, SuiteTreeNode> {
+  const root = new Map<string, SuiteTreeNode>()
   for (const test of tests) {
-    const suite = test.titlePath[0] ?? 'Uncategorized'
-    if (!map.has(suite)) map.set(suite, [])
-    map.get(suite)?.push(test)
+    const path = test.titlePath.slice(0, -1)
+    const effectivePath = path.length > 0 ? path : ['Uncategorized']
+    insertIntoTree(root, effectivePath, test)
   }
-  return map
+  return root
+}
+
+function insertIntoTree(
+  map: Map<string, SuiteTreeNode>,
+  path: string[],
+  test: TestRecord,
+) {
+  const [head, ...rest] = path
+  if (!map.has(head)) map.set(head, { children: new Map(), tests: [] })
+  const node = map.get(head)!
+  if (rest.length === 0) {
+    node.tests.push(test)
+  } else {
+    insertIntoTree(node.children, rest, test)
+  }
 }
 
 function Skeleton() {

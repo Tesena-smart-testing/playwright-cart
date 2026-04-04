@@ -3,33 +3,42 @@ import { Link } from 'react-router-dom'
 import type { TestRecord, TestStatus } from '../lib/api.js'
 import { formatDuration } from '../lib/format.js'
 
-interface Props {
-  runId: string
-  suite: string
+export interface SuiteTreeNode {
+  children: Map<string, SuiteTreeNode>
   tests: TestRecord[]
 }
 
-export default function SuiteGroup({ runId, suite, tests }: Props) {
+interface Props {
+  runId: string
+  name: string
+  node: SuiteTreeNode
+  depth?: number
+}
+
+const DEPTH_PADDING = ['pl-4', 'pl-8', 'pl-12', 'pl-16']
+
+function getPadding(depth: number) {
+  return DEPTH_PADDING[Math.min(depth, DEPTH_PADDING.length - 1)]
+}
+
+export default function SuiteGroup({ runId, name, node, depth = 0 }: Props) {
   const [open, setOpen] = useState(true)
-  const failed = tests.filter((t) => t.status === 'failed' || t.status === 'timedOut').length
+  const { total, failed } = countTests(node)
 
   return (
     <div className="overflow-hidden rounded-xl border border-tn-border">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-3 bg-tn-panel px-4 py-3 text-left transition-colors hover:bg-tn-highlight/60"
+        className={`flex w-full items-center gap-3 bg-tn-panel px-4 py-3 text-left transition-colors hover:bg-tn-highlight/60 ${getPadding(depth)}`}
       >
         <span
-          className={[
-            'font-mono text-sm text-tn-muted transition-transform duration-200',
-            open ? 'rotate-90' : 'rotate-0',
-          ].join(' ')}
-          style={{ display: 'inline-block' }}
+          className="font-mono text-sm text-tn-muted transition-transform duration-200"
+          style={{ display: 'inline-block', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
         >
           ›
         </span>
-        <span className="font-display font-semibold text-tn-fg">{suite}</span>
+        <span className="font-display font-semibold text-tn-fg">{name}</span>
         <span className="ml-auto">
           {failed > 0 ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-tn-red/10 px-2 py-0.5 font-display text-xs font-semibold text-tn-red">
@@ -37,30 +46,64 @@ export default function SuiteGroup({ runId, suite, tests }: Props) {
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-tn-green/10 px-2 py-0.5 font-display text-xs font-semibold text-tn-green">
-              {tests.length} passed
+              {total} passed
             </span>
           )}
         </span>
       </button>
+
       {open && (
-        <div className="divide-y divide-tn-border bg-tn-bg/50">
-          {tests.map((test) => (
-            <Link
-              key={test.testId}
-              to={`/runs/${runId}/tests/${test.testId}`}
-              className="flex items-center gap-3 py-2.5 pl-10 pr-4 transition-colors hover:bg-tn-highlight/40"
-            >
-              <TestStatusIcon status={test.status} />
-              <span className="flex-1 text-sm text-tn-fg">{test.title}</span>
-              <span className="font-mono text-xs text-tn-muted">
-                {formatDuration(test.duration)}
-              </span>
-            </Link>
-          ))}
+        <div className="bg-tn-bg/50">
+          {/* Direct tests at this level */}
+          {node.tests.length > 0 && (
+            <div className="divide-y divide-tn-border">
+              {node.tests.map((test) => (
+                <Link
+                  key={test.testId}
+                  to={`/runs/${runId}/tests/${test.testId}`}
+                  className={`flex items-center gap-3 py-2.5 pr-4 transition-colors hover:bg-tn-highlight/40 ${getPadding(depth + 1)}`}
+                >
+                  <TestStatusIcon status={test.status} />
+                  <span className="flex-1 text-sm text-tn-fg">{test.title}</span>
+                  <span className="font-mono text-xs text-tn-muted">
+                    {formatDuration(test.duration)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Nested describe blocks */}
+          {node.children.size > 0 && (
+            <div className="divide-y divide-tn-border border-t border-tn-border">
+              {[...node.children.entries()].map(([childName, childNode]) => (
+                <SuiteGroup
+                  key={childName}
+                  runId={runId}
+                  name={childName}
+                  node={childNode}
+                  depth={depth + 1}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
   )
+}
+
+function countTests(node: SuiteTreeNode): { total: number; failed: number } {
+  const result = {
+    total: node.tests.length,
+    failed: node.tests.filter((t) => t.status === 'failed' || t.status === 'timedOut').length,
+  }
+  for (const child of node.children.values()) {
+    const sub = countTests(child)
+    result.total += sub.total
+    result.failed += sub.failed
+  }
+  return result
 }
 
 const STATUS_ICON: Record<TestStatus, { icon: string; className: string }> = {
