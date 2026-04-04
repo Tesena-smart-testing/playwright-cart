@@ -9,7 +9,11 @@ import { signToken, verifyPassword } from './utils.js'
 export const authRouter = new Hono<HonoEnv>()
 
 authRouter.post('/login', async (c) => {
-  const { username, password } = await c.req.json<{ username: string; password: string }>()
+  const body = await c.req.json<{ username?: unknown; password?: unknown }>()
+  if (typeof body.username !== 'string' || typeof body.password !== 'string') {
+    return c.json({ error: 'Invalid request' }, 400)
+  }
+  const { username, password } = body
 
   const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1)
   if (!user) {
@@ -26,8 +30,9 @@ authRouter.post('/login', async (c) => {
   setCookie(c, 'auth_token', token, {
     httpOnly: true,
     sameSite: 'strict',
-    secure: false,
+    secure: process.env.NODE_ENV === 'production',
     path: '/',
+    maxAge: 8 * 60 * 60,
   })
 
   return c.json({ ok: true })

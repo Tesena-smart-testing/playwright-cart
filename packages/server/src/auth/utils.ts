@@ -1,6 +1,6 @@
+import { createHash, randomBytes } from 'node:crypto'
 import * as bcrypt from 'bcrypt'
 import { sign, verify } from 'hono/jwt'
-import { createHash, randomBytes } from 'node:crypto'
 
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET
@@ -16,7 +16,9 @@ export async function signToken(payload: { userId: number }): Promise<string> {
 export async function verifyToken(token: string): Promise<{ userId: number } | null> {
   try {
     const payload = await verify(token, getJwtSecret(), 'HS256')
-    return { userId: payload['userId'] as number }
+    const raw = (payload as Record<string, unknown>).userId
+    if (typeof raw !== 'number') return null
+    return { userId: raw }
   } catch {
     return null
   }

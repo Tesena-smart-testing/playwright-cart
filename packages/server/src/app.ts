@@ -11,16 +11,15 @@ import { runs } from './runs/routes.js'
 
 export const app = new Hono<HonoEnv>()
 
+const PUBLIC_PATHS = new Set(['/api/auth/login'])
+
 app.use('*', logger())
 app.use('/api/*', cors())
+app.route('/api/auth', authRouter)
 app.use('/api/*', async (c, next) => {
-  if (c.req.method === 'POST' && c.req.path === '/api/auth/login') {
-    return next()
-  }
+  if (PUBLIC_PATHS.has(c.req.path)) return next()
   return authMiddleware(c, next)
 })
-
-app.route('/api/auth', authRouter)
 
 app.get('/api/events', (c) =>
   streamSSE(c, (stream) => {
