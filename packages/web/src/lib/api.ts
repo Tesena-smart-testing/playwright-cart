@@ -91,6 +91,21 @@ export async function fetchRuns(): Promise<RunRecord[]> {
   return res.json() as Promise<RunRecord[]>
 }
 
+export async function deleteRun(runId: string): Promise<void> {
+  const res = await fetch(`/api/runs/${runId}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
+
+export async function deleteRunsBatch(runIds: string[]): Promise<{ deleted: number }> {
+  const res = await fetch('/api/runs/delete-batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ runIds }),
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<{ deleted: number }>
+}
+
 export async function fetchRun(runId: string): Promise<RunWithTests> {
   const res = await fetch(`/api/runs/${runId}`)
   if (res.status === 404) throw new NotFoundError('Run not found')

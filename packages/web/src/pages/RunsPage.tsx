@@ -2,11 +2,13 @@ import { useSearchParams } from 'react-router-dom'
 import { FilterBar, applyFilters } from '../components/FilterBar.js'
 import RunsTable from '../components/RunsTable.js'
 import StatsBar from '../components/StatsBar.js'
+import { useCurrentUser } from '../hooks/useCurrentUser.js'
 import { useRuns } from '../hooks/useRuns.js'
 
 export default function RunsPage() {
   const [params] = useSearchParams()
   const { data: runs, isLoading, error, refetch } = useRuns()
+  const { isAdmin } = useCurrentUser()
 
   if (isLoading) return <Skeleton />
 
@@ -34,7 +36,7 @@ export default function RunsPage() {
     <div>
       <StatsBar runs={runs} />
       <FilterBar runs={runs} />
-      <RunsTable runs={filtered} />
+      <RunsTable runs={filtered} isAdmin={isAdmin} onDeleteSuccess={() => refetch()} />
     </div>
   )
 }
