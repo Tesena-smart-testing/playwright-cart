@@ -211,7 +211,11 @@ export async function deleteRun(runId: string): Promise<boolean> {
     .returning({ runId: runs.runId })
   if (deleted.length === 0) return false
   const dir = join(storageConfig.dataDir, runId)
-  rmSync(dir, { recursive: true, force: true })
+  try {
+    rmSync(dir, { recursive: true, force: true })
+  } catch (err) {
+    console.error(`[storage] failed to remove disk directory for run ${runId}:`, err)
+  }
   return true
 }
 
@@ -223,7 +227,11 @@ export async function deleteRuns(runIds: string[]): Promise<number> {
     .returning({ runId: runs.runId })
   for (const { runId } of deleted) {
     const dir = join(storageConfig.dataDir, runId)
-    rmSync(dir, { recursive: true, force: true })
+    try {
+      rmSync(dir, { recursive: true, force: true })
+    } catch (err) {
+      console.error(`[storage] failed to remove disk directory for run ${runId}:`, err)
+    }
   }
   return deleted.length
 }
