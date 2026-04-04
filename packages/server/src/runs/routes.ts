@@ -85,7 +85,7 @@ runs.post('/:runId/report', async (c) => {
   const zip = new AdmZip(zipBuf)
   zip.extractAllTo(storage.getReportDir(runId), true)
 
-  const reportUrl = `/reports/${runId}/index.html`
+  const reportUrl = `/reports/${runId}/report/index.html`
   storage.updateRun(runId, { completedAt, status, reportUrl })
 
   return c.json({ reportUrl })
