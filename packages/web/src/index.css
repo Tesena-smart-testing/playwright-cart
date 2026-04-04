@@ -136,3 +136,25 @@ kbd {
 :root[data-theme="light"] {
   scrollbar-color: var(--tn-border) var(--tn-bg);
 }
+
+/* ── Native select color-scheme ──────────────────── */
+:root[data-theme="dark"] select,
+:root:not([data-theme="light"]) select {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] select {
+  color-scheme: light;
+}
+
+/* Explicit option colors for browsers that support them */
+:root[data-theme="dark"] select option,
+:root:not([data-theme="light"]) select option {
+  background-color: var(--tn-panel);
+  color: var(--tn-fg);
+}
+
+:root[data-theme="light"] select option {
+  background-color: var(--tn-bg);
+  color: var(--tn-fg);
+}
