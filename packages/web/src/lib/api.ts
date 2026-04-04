@@ -1,3 +1,13 @@
+export type UserRole = 'admin' | 'user'
+export type Theme = 'dark' | 'light' | 'system'
+
+export interface CurrentUser {
+  id: number
+  username: string
+  role: UserRole
+  theme: Theme
+}
+
 export type RunStatus = 'running' | 'passed' | 'failed' | 'interrupted' | 'timedOut'
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted'
 
@@ -32,6 +42,29 @@ export class NotFoundError extends Error {
     super(message)
     this.name = 'NotFoundError'
   }
+}
+
+export async function fetchMe(): Promise<CurrentUser | null> {
+  const res = await fetch('/api/auth/me')
+  if (res.status === 401) return null
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<CurrentUser>
+}
+
+export async function login(username: string, password: string): Promise<void> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error((err as { error?: string }).error || 'Login failed')
+  }
+}
+
+export async function logout(): Promise<void> {
+  await fetch('/api/auth/logout', { method: 'POST' })
 }
 
 export async function fetchRuns(): Promise<RunRecord[]> {
