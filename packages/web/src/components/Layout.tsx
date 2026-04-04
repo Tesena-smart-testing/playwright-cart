@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
+import { useServerEvents } from '../hooks/useServerEvents.js'
 import TopNav from './TopNav.js'
 
 export default function Layout() {
+  useServerEvents()
   return (
     <div className="min-h-screen bg-tn-bg text-tn-fg">
       <TopNav />

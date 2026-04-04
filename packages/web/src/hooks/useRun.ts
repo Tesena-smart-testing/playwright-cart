@@ -5,6 +5,5 @@ export function useRun(runId: string) {
   return useQuery({
     queryKey: ['run', runId],
     queryFn: () => fetchRun(runId),
-    refetchInterval: (query) => (query.state.data?.status === 'running' ? 5000 : false),
   })
 }
