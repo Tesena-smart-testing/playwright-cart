@@ -1,7 +1,6 @@
 {
   "name": "@radekbednarik/playwright-cart-reporter",
   "version": "0.0.5",
-  "private": true,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,7 +12,6 @@
     "dist"
   ],
   "publishConfig": {
-    "access": "public",
     "registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
