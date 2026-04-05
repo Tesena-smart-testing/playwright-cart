@@ -5,7 +5,7 @@ import 'dotenv/config'
 export default defineConfig({
   testDir: './tests',
   reporter: [
-    ['html', { open: 'never' }],
+    ['html', { open: 'never', outputFolder: 'html-report' }],
     [
       '@playwright-cart/reporter',
       {
