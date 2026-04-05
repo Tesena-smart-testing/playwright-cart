@@ -1,10 +1,21 @@
 {
-  "name": "@playwright-cart/reporter",
+  "name": "@radekbednarik/playwright-cart-reporter",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/radekBednarik/playwright-cart.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com/"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
