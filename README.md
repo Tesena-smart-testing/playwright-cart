@@ -96,7 +96,7 @@ The reporter is published to GitHub Packages under `@radekbednarik/playwright-ca
 ### 1. Configure registry auth
 
 Create or update `.npmrc` in your project root to route the `@radekbednarik` scope to GitHub Packages.
-Do not forget, that `.npmrc` must be in `.gitignore`!
+**This file is safe to check into git, since the NPM_TOKEN is resolved by GitHub Actions.**
 
 ```ini
 @radekbednarik:registry=https://npm.pkg.github.com
