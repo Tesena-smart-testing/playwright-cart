@@ -55,8 +55,10 @@ services:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
-    # No ports: — Coolify's Traefik proxy routes your domain to this container
-    # on its internal port 80. Configure the domain in the Coolify UI.
+    # No ports: — Coolify's proxy routes your domain to this container on
+    # its internal port 80. Configure the domain in the Coolify UI.
+    # The container must be on the `coolify` network so the proxy can reach it,
+    # and on the project network so it can reach the server container.
     depends_on:
       server:
         condition: service_healthy
@@ -67,3 +69,10 @@ services:
       retries: 3
       start_period: 5s
     restart: unless-stopped
+    networks:
+      - default
+      - coolify
+
+networks:
+  coolify:
+    external: true
