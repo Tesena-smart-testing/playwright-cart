@@ -55,6 +55,8 @@ services:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
+    labels:
+      - "traefik.http.services.web.loadbalancer.server.port=80"
     # No ports: — Coolify's Traefik proxy routes your domain to this container
     # on its internal port 80. Configure the domain in the Coolify UI.
     depends_on:
