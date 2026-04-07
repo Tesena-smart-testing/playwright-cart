@@ -5,7 +5,7 @@ import { useCurrentUser } from '../hooks/useCurrentUser.js'
 import { useSessionTimer } from '../hooks/useSessionTimer.js'
 import { useTheme } from '../hooks/useTheme.js'
 import { logout, updateMe } from '../lib/api.js'
-import { type Theme, applyTheme, cycleTheme, getStoredTheme } from '../lib/theme.js'
+import { applyTheme, cycleTheme, getStoredTheme, type Theme } from '../lib/theme.js'
 import SessionIndicator from './SessionIndicator.js'
 
 const THEME_GLYPHS: Record<Theme, string> = {
