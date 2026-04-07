@@ -56,7 +56,7 @@ export default function SessionIndicator({ timer }: Props) {
       {/* Tooltip — visible on hover via CSS group */}
       <div
         role="tooltip"
-        className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded border border-tn-border bg-tn-panel px-2.5 py-1.5 font-mono text-xs text-tn-fg opacity-0 shadow-xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100"
+        className="pointer-events-none invisible absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 whitespace-nowrap rounded border border-tn-border bg-tn-panel px-2.5 py-1.5 font-mono text-xs text-tn-fg opacity-0 shadow-xl transition-opacity duration-150 group-hover:visible group-hover:opacity-100"
       >
         {timer.tooltipLabel}
       </div>
