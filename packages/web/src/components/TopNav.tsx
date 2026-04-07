@@ -2,9 +2,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '../hooks/useCurrentUser.js'
+import { useSessionTimer } from '../hooks/useSessionTimer.js'
 import { useTheme } from '../hooks/useTheme.js'
 import { logout, updateMe } from '../lib/api.js'
 import { type Theme, applyTheme, cycleTheme, getStoredTheme } from '../lib/theme.js'
+import SessionIndicator from './SessionIndicator.js'
 
 const THEME_GLYPHS: Record<Theme, string> = {
   system: '◐',
@@ -26,6 +28,7 @@ const NAV_LINKS = [
 export default function TopNav() {
   const { theme } = useTheme()
   const { user } = useCurrentUser()
+  const sessionTimer = useSessionTimer(user?.expiresAt)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -111,6 +114,9 @@ export default function TopNav() {
           >
             <span className="font-mono text-base leading-none">{THEME_GLYPHS[theme]}</span>
           </button>
+
+          {/* Session expiry indicator */}
+          {user && sessionTimer && <SessionIndicator timer={sessionTimer} />}
 
           {/* User dropdown */}
           {user && (

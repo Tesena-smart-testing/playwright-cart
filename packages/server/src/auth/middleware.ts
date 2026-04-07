@@ -20,6 +20,7 @@ export const authMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
           username: user.username,
           role: user.role,
           theme: user.theme,
+          exp: result.exp,
         })
         return next()
       }

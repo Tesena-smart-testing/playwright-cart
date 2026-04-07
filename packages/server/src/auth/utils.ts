@@ -13,12 +13,14 @@ export async function signToken(payload: { userId: number }): Promise<string> {
   return sign({ ...payload, exp }, getJwtSecret())
 }
 
-export async function verifyToken(token: string): Promise<{ userId: number } | null> {
+export async function verifyToken(token: string): Promise<{ userId: number; exp: number } | null> {
   try {
-    const payload = await verify(token, getJwtSecret(), 'HS256')
-    const raw = (payload as Record<string, unknown>).userId
-    if (typeof raw !== 'number') return null
-    return { userId: raw }
+    const payload = await verify(token, getJwtSecret(), 'HS256') as Record<string, unknown>
+    const userId = payload.userId
+    const exp = payload.exp
+    if (typeof userId !== 'number') return null
+    if (typeof exp !== 'number') return null
+    return { userId, exp }
   } catch {
     return null
   }

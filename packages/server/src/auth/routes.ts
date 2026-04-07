@@ -53,5 +53,6 @@ authRouter.get('/me', (c) => {
     username: authUser.username,
     role: authUser.role,
     theme: authUser.theme,
+    expiresAt: authUser.exp,
   })
 })

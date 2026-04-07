@@ -127,6 +127,16 @@ kbd {
   animation: pulseSlow 1.8s ease-in-out infinite;
 }
 
+/* ── Session indicator glow (critical state) ───────── */
+@keyframes sessionGlow {
+  0%, 100% { filter: drop-shadow(0 0 2px var(--tn-red)); }
+  50%       { filter: drop-shadow(0 0 5px var(--tn-red)); }
+}
+
+.session-indicator-critical {
+  animation: sessionGlow 2s ease-in-out infinite;
+}
+
 /* ── Scrollbar ───────────────────────────────────── */
 :root[data-theme="dark"],
 :root:not([data-theme="light"]) {

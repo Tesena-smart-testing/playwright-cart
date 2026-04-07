@@ -6,6 +6,7 @@ export interface CurrentUser {
   username: string
   role: UserRole
   theme: Theme
+  expiresAt: number
 }
 
 export type RunStatus = 'running' | 'passed' | 'failed' | 'interrupted' | 'timedOut'
