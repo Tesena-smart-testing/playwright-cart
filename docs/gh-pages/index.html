@@ -377,6 +377,12 @@
     .copy-btn:hover { background: var(--surface-2); border-color: var(--accent-blue); }
     .copy-btn.copied { color: var(--accent-green); border-color: var(--accent-green); }
 
+    .step-label {
+      font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin: 28px 0 10px;
+    }
+
     .code-block {
       background: var(--code-bg); border: 1px solid var(--border);
       border-radius: 10px; overflow: hidden;
@@ -541,15 +547,32 @@
   <!-- INTEGRATION -->
   <section class="code-section" aria-labelledby="integration-title">
     <div class="section-label">Integration</div>
-    <h2 class="section-title" id="integration-title">Add to your project in 2 steps</h2>
-    <p class="section-sub" style="margin-bottom:32px;">Install the reporter, point it at your server, done.</p>
+    <h2 class="section-title" id="integration-title">Add to your project in 3 steps</h2>
+    <p class="section-sub" style="margin-bottom:32px;">Published on <strong>GitHub Packages</strong> — registry auth required before install.</p>
 
+    <p class="step-label">Step 1 — Configure registry</p>
+    <div class="code-block" role="region" aria-label=".npmrc example">
+      <div class="code-header">
+        <div class="code-dots" aria-hidden="true">
+          <span class="dot dot-r"></span>
+          <span class="dot dot-y"></span>
+          <span class="dot dot-g"></span>
+        </div>
+        <span class="code-filename">.npmrc</span>
+        <button type="button" class="copy-btn" data-copy="@radekbednarik:registry=https://npm.pkg.github.com&#10;//npm.pkg.github.com:_authToken=${GITHUB_TOKEN}" aria-label="Copy .npmrc content">copy</button>
+      </div>
+      <pre><code>@radekbednarik:registry=https://npm.pkg.github.com
+//npm.pkg.github.com:_authToken=${GITHUB_TOKEN}</code></pre>
+    </div>
+
+    <p class="step-label">Step 2 — Install</p>
     <div class="install-strip">
       <span class="install-prompt" aria-hidden="true">$</span>
       <code>pnpm add @radekbednarik/playwright-cart-reporter</code>
       <button type="button" class="copy-btn" data-copy="pnpm add @radekbednarik/playwright-cart-reporter" aria-label="Copy install command">copy</button>
     </div>
 
+    <p class="step-label">Step 3 — Configure</p>
     <div class="code-block" role="region" aria-label="playwright.config.ts example">
       <div class="code-header">
         <div class="code-dots" aria-hidden="true">
