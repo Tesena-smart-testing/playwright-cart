@@ -49,3 +49,4 @@ packages/server/data/
 # Playwright
 html-report
 playwright-report
+.superpowers/
