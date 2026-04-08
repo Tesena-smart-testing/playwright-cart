@@ -4,7 +4,7 @@ import { getCookie } from 'hono/cookie'
 import { db } from '../db/client.js'
 import { apiKeys, users } from '../db/schema.js'
 import type { HonoEnv } from './types.js'
-import { hashApiKey, verifyToken } from './utils.js'
+import { getJwtSecret, hashApiKey, verifyToken } from './utils.js'
 
 export const authMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
   const token = getCookie(c, 'auth_token')
@@ -30,7 +30,7 @@ export const authMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
   const authHeader = c.req.header('Authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const key = authHeader.slice(7)
-    const keyHash = hashApiKey(key)
+    const keyHash = hashApiKey(key, getJwtSecret())
     const [row] = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1)
     if (row) {
       c.set('authUser', { type: 'apikey', keyId: row.id })

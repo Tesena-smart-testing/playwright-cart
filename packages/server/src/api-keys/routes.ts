@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { adminMiddleware } from '../auth/middleware.js'
 import type { HonoEnv } from '../auth/types.js'
-import { generateApiKey, hashApiKey } from '../auth/utils.js'
+import { generateApiKey, getJwtSecret, hashApiKey } from '../auth/utils.js'
 import { db } from '../db/client.js'
 import { apiKeys } from '../db/schema.js'
 
@@ -39,7 +39,7 @@ apiKeysRouter.post('/', adminMiddleware, async (c) => {
   }
 
   const rawKey = generateApiKey()
-  const keyHash = hashApiKey(rawKey)
+  const keyHash = hashApiKey(rawKey, getJwtSecret())
 
   const [inserted] = await db
     .insert(apiKeys)

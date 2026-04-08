@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto'
+import { createHmac, randomBytes } from 'node:crypto'
 import * as bcrypt from 'bcrypt'
 import { sign, verify } from 'hono/jwt'
 
@@ -38,6 +38,6 @@ export function generateApiKey(): string {
   return randomBytes(32).toString('hex')
 }
 
-export function hashApiKey(key: string): string {
-  return createHash('sha256').update(key).digest('hex')
+export function hashApiKey(key: string, secret: string): string {
+  return createHmac('sha256', secret).update(key).digest('hex')
 }
