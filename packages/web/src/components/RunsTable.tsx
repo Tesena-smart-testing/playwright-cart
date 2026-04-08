@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { deleteRun, deleteRunsBatch } from '../lib/api.js'
 import type { RunRecord } from '../lib/api.js'
-import { formatRelativeTime } from '../lib/format.js'
+import { deleteRun, deleteRunsBatch } from '../lib/api.js'
+import { formatExpiry, formatRelativeTime } from '../lib/format.js'
+import ExpiryChip from './ExpiryChip.js'
 import StatusBadge from './StatusBadge.js'
 
 interface Props {
   runs: RunRecord[]
   isAdmin?: boolean
+  retentionDays: number
   onDeleteSuccess?: () => void
 }
 
-export default function RunsTable({ runs, isAdmin, onDeleteSuccess }: Props) {
+export default function RunsTable({ runs, isAdmin, retentionDays, onDeleteSuccess }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   if (runs.length === 0) {
@@ -64,7 +66,7 @@ export default function RunsTable({ runs, isAdmin, onDeleteSuccess }: Props) {
     }
   }
 
-  const dataHeaders = ['Project / Branch', 'Commit', 'Status', 'When', '']
+  const dataHeaders = ['Project / Branch', 'Commit', 'Status', 'When', 'Expires in', '']
 
   return (
     <div>
@@ -141,6 +143,9 @@ export default function RunsTable({ runs, isAdmin, onDeleteSuccess }: Props) {
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-tn-muted">
                   {formatRelativeTime(run.startedAt)}
+                </td>
+                <td className="px-4 py-3">
+                  <ExpiryChip {...formatExpiry(run.startedAt, retentionDays)} />
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-4">
