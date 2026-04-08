@@ -12,12 +12,18 @@ export default function StatsBar({ runs }: Props) {
 
   return (
     <div className="mb-6 flex items-baseline gap-0 divide-x divide-tn-border">
-      <Stat value={runs.length} label="runs" className="pr-6 text-tn-fg" />
-      <Stat value={`${passRate}%`} label="pass rate" className="px-6 text-tn-green" />
+      <Stat value={runs.length} label="runs" containerClassName="pr-6" className="text-tn-fg" />
+      <Stat
+        value={`${passRate}%`}
+        label="pass rate"
+        containerClassName="px-6"
+        className="text-tn-green"
+      />
       <Stat
         value={failed}
         label="failed"
-        className={`pl-6 ${failed > 0 ? 'text-tn-red' : 'text-tn-muted'}`}
+        containerClassName="pl-6"
+        className={failed > 0 ? 'text-tn-red' : 'text-tn-muted'}
       />
     </div>
   )
@@ -27,13 +33,15 @@ function Stat({
   value,
   label,
   className,
+  containerClassName,
 }: {
   value: string | number
   label: string
   className?: string
+  containerClassName?: string
 }) {
   return (
-    <div className="flex items-baseline gap-2">
+    <div className={`flex items-baseline gap-2 ${containerClassName ?? ''}`}>
       <span className={`font-display text-3xl font-bold tabular-nums leading-none ${className}`}>
         {value}
       </span>
