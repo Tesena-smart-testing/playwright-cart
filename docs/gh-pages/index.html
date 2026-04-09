@@ -1819,7 +1819,7 @@
       <section id="integration" aria-labelledby="integration-heading">
         <p class="section-eyebrow">[ integrate ]</p>
         <h2 id="integration-heading" class="section-title">
-          Add to your<br />project in 3 steps.
+          Enable reporting in your<br />project in 3 steps.
         </h2>
         <p class="section-sub">
           Published on <strong>GitHub Packages</strong> — registry auth required
@@ -2093,28 +2093,33 @@
 
     <script>
       (() => {
-        var subtitle = document.querySelector('.hero-subtitle');
+        var subtitle = document.querySelector(".hero-subtitle");
         if (!subtitle) return;
 
-        var phrases = Array.from(subtitle.querySelectorAll('.tw-phrase')).map((el) => el.textContent.trim());
+        var phrases = Array.from(subtitle.querySelectorAll(".tw-phrase")).map(
+          (el) => el.textContent.trim(),
+        );
         if (!phrases.length) return;
 
         // Respect reduced-motion preference — show first phrase statically
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-          subtitle.insertBefore(document.createTextNode(phrases[0]), subtitle.firstChild);
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          subtitle.insertBefore(
+            document.createTextNode(phrases[0]),
+            subtitle.firstChild,
+          );
           return;
         }
 
-        var textNode = document.createTextNode('');
+        var textNode = document.createTextNode("");
         subtitle.insertBefore(textNode, subtitle.firstChild);
 
         var phraseIndex = 0;
         var charIndex = 0;
         var deleting = false;
 
-        var TYPE_SPEED = 65;      // ms per character when typing
-        var DELETE_SPEED = 35;    // ms per character when deleting
-        var PAUSE_AFTER_TYPE = 1800;  // ms pause when phrase is fully typed
+        var TYPE_SPEED = 65; // ms per character when typing
+        var DELETE_SPEED = 35; // ms per character when deleting
+        var PAUSE_AFTER_TYPE = 1800; // ms pause when phrase is fully typed
         var PAUSE_AFTER_DELETE = 400; // ms pause after fully deleted before next phrase
 
         function tick() {
