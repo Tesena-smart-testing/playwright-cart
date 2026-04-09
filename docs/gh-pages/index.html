@@ -203,9 +203,9 @@
         *,
         *::before,
         *::after {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms;
+          animation-iteration-count: 1;
+          transition-duration: 0.01ms;
         }
       }
 
@@ -808,15 +808,6 @@
         margin-bottom: 18px;
       }
 
-      .step p code {
-        font-family: var(--font-code);
-        color: var(--amber);
-        background: var(--amber-dim);
-        border-radius: 3px;
-        padding: 1px 5px;
-        font-size: 0.9em;
-      }
-
       .step-tag {
         font-family: var(--font-mono);
         font-size: 0.8rem;
@@ -1046,6 +1037,15 @@
       .install-strip code {
         color: var(--text);
         flex: 1;
+      }
+
+      .step p code {
+        font-family: var(--font-code);
+        color: var(--amber);
+        background: var(--amber-dim);
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-size: 0.9em;
       }
 
       .copy-btn {
@@ -1711,6 +1711,7 @@
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M3 9h18M9 21V9" />
@@ -1738,6 +1739,7 @@
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
@@ -1766,6 +1768,7 @@
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <path
                   d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"
@@ -1792,6 +1795,7 @@
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
+                aria-hidden="true"
               >
                 <ellipse cx="12" cy="5" rx="9" ry="3" />
                 <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
@@ -1995,11 +1999,12 @@
 
     <script>
       // ── Copy buttons ──────────────────────────────────────────
-      document.querySelectorAll(".copy-btn").forEach(function (btn) {
-        btn.addEventListener("click", function () {
+      document.querySelectorAll(".copy-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
           var text = btn.dataset.copy;
+          var block;
           if (!text) {
-            var block = btn.closest(".code-block");
+            block = btn.closest(".code-block");
             if (block) text = block.querySelector("code").textContent;
           }
           if (!text) return;
@@ -2007,7 +2012,7 @@
           function onSuccess() {
             btn.textContent = "copied!";
             btn.classList.add("copied");
-            setTimeout(function () {
+            setTimeout(() => {
               btn.textContent = orig;
               btn.classList.remove("copied");
             }, 2000);
@@ -2016,7 +2021,7 @@
             navigator.clipboard
               .writeText(text)
               .then(onSuccess)
-              .catch(function () {
+              .catch(() => {
                 fallbackCopy(text, onSuccess);
               });
           } else {
@@ -2064,8 +2069,8 @@
         if (lastFocus) lastFocus.focus();
       }
 
-      document.querySelectorAll(".bento-panel").forEach(function (panel) {
-        panel.addEventListener("click", function () {
+      document.querySelectorAll(".bento-panel").forEach((panel) => {
+        panel.addEventListener("click", () => {
           var img = panel.querySelector("img");
           openLightbox(panel.dataset.src, img.alt, panel.dataset.caption);
         });
@@ -2073,11 +2078,11 @@
 
       lbClose.addEventListener("click", closeLightbox);
 
-      lightbox.addEventListener("click", function (e) {
+      lightbox.addEventListener("click", (e) => {
         if (e.target === lightbox) closeLightbox();
       });
 
-      document.addEventListener("keydown", function (e) {
+      document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && !lightbox.hidden) closeLightbox();
         if (e.key === "Tab" && !lightbox.hidden) {
           e.preventDefault();
@@ -2087,13 +2092,11 @@
     </script>
 
     <script>
-      (function () {
+      (() => {
         var subtitle = document.querySelector('.hero-subtitle');
         if (!subtitle) return;
 
-        var phrases = Array.from(subtitle.querySelectorAll('.tw-phrase')).map(function (el) {
-          return el.textContent.trim();
-        });
+        var phrases = Array.from(subtitle.querySelectorAll('.tw-phrase')).map((el) => el.textContent.trim());
         if (!phrases.length) return;
 
         // Respect reduced-motion preference — show first phrase statically
