@@ -11,8 +11,8 @@ export default defineConfig({
       {
         serverUrl: 'http://localhost:3001',
         project: 'e2e-demo',
-        branch: process.env.BRANCH ?? 'local',
-        commitSha: process.env.COMMIT_SHA ?? 'manual',
+        branch: process.env.BRANCH ?? 'test',
+        commitSha: process.env.COMMIT_SHA ?? '4db6gf7',
         apiKey: process.env.API_KEY,
       },
     ],
