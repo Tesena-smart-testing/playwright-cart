@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import AdmZip from 'adm-zip'
 import { Hono } from 'hono'
 import { adminMiddleware } from '../auth/middleware.js'
@@ -8,6 +8,8 @@ import { type RunEvent, runEmitter } from '../events.js'
 import * as storage from './storage.js'
 
 export const runs = new Hono<HonoEnv>()
+
+const SAFE_ID = /^[a-z0-9_\-.]+$/i
 
 runs.post('/', async (c) => {
   const body = await c.req.json<{
@@ -65,8 +67,10 @@ runs.post('/:runId/complete', async (c) => {
 
 runs.post('/:runId/tests', async (c) => {
   const runId = c.req.param('runId')
+  if (!SAFE_ID.test(runId)) return c.json({ error: 'Invalid runId' }, 400)
   const body = await c.req.parseBody()
   const metadata = JSON.parse(body.metadata as string) as storage.TestRecord
+  if (!SAFE_ID.test(metadata.testId)) return c.json({ error: 'Invalid testId' }, 400)
   const attachmentsDir = storage.getAttachmentsDir(runId, metadata.testId)
 
   for (let i = 0; ; i++) {
@@ -74,7 +78,7 @@ runs.post('/:runId/tests', async (c) => {
     if (!file) break
     if (file instanceof File) {
       const buf = Buffer.from(await file.arrayBuffer())
-      writeFileSync(join(attachmentsDir, file.name), buf)
+      writeFileSync(join(attachmentsDir, basename(file.name)), buf)
     }
   }
 
@@ -85,6 +89,7 @@ runs.post('/:runId/tests', async (c) => {
 
 runs.post('/:runId/report', async (c) => {
   const runId = c.req.param('runId')
+  if (!SAFE_ID.test(runId)) return c.json({ error: 'Invalid runId' }, 400)
   const body = await c.req.parseBody()
   const reportFile = body.report as File
   const completedAt = body.completedAt as string
@@ -92,7 +97,16 @@ runs.post('/:runId/report', async (c) => {
 
   const zipBuf = Buffer.from(await reportFile.arrayBuffer())
   const zip = new AdmZip(zipBuf)
-  zip.extractAllTo(storage.getReportDir(runId), true)
+  const reportDir = storage.getReportDir(runId)
+  const resolvedBase = resolve(reportDir)
+  for (const entry of zip.getEntries()) {
+    if (entry.isDirectory) continue
+    const entryPath = resolve(reportDir, entry.entryName)
+    if (!entryPath.startsWith(`${resolvedBase}/`)) {
+      return c.json({ error: 'Invalid archive entry' }, 400)
+    }
+  }
+  zip.extractAllTo(reportDir, true)
 
   const reportUrl = `/reports/${runId}/report/index.html`
   await storage.updateRun(runId, { completedAt, status, reportUrl })
