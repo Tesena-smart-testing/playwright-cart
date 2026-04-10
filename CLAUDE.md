@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Agent Behavior
+
+**Always load the caveman skill at the start of every session** by reading `.agents/skills/caveman/SKILL.md` and applying its communication rules for all responses.
+
 ## Commands
 
 ```bash
