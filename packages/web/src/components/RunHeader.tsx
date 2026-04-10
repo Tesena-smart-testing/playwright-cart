@@ -1,8 +1,8 @@
-import type { RunWithTests, TestRecord } from '../lib/api.js'
+import type { AnnotatedRunWithTests, AnnotatedTestRecord } from '../lib/api.js'
 import StatusBadge from './StatusBadge.js'
 
 interface Props {
-  run: RunWithTests
+  run: AnnotatedRunWithTests
 }
 
 export default function RunHeader({ run }: Props) {
@@ -43,17 +43,19 @@ export default function RunHeader({ run }: Props) {
   )
 }
 
-function PassRateBar({ tests }: { tests: TestRecord[] }) {
+function PassRateBar({ tests }: { tests: AnnotatedTestRecord[] }) {
   if (tests.length === 0) return null
 
   const passed = tests.filter((t) => t.status === 'passed').length
-  const failed = tests.filter((t) => t.status === 'failed').length
-  const timedOut = tests.filter((t) => t.status === 'timedOut').length
+  const failed = tests.filter((t) => !t.retried && t.status === 'failed').length
+  const timedOut = tests.filter((t) => !t.retried && t.status === 'timedOut').length
+  const flaky = tests.filter((t) => t.retried).length
   const skipped = tests.filter((t) => t.status === 'skipped').length
   const total = tests.length
 
   const passedPct = (passed / total) * 100
   const failedPct = ((failed + timedOut) / total) * 100
+  const flakyPct = (flaky / total) * 100
 
   return (
     <div className="mt-3 space-y-2">
@@ -64,11 +66,16 @@ function PassRateBar({ tests }: { tests: TestRecord[] }) {
           style={{ width: `${passedPct}%` }}
         />
         <div className="bg-tn-red transition-all duration-500" style={{ width: `${failedPct}%` }} />
+        <div
+          className="bg-tn-yellow transition-all duration-500"
+          style={{ width: `${flakyPct}%` }}
+        />
       </div>
 
       {/* Stat pills */}
       <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
         <span className="text-tn-green">{passed} passed</span>
+        {flaky > 0 && <span className="text-tn-yellow">{flaky} flaky</span>}
         {failed > 0 && <span className="text-tn-red">{failed} failed</span>}
         {timedOut > 0 && <span className="text-tn-yellow">{timedOut} timed out</span>}
         {skipped > 0 && <span className="text-tn-muted">{skipped} skipped</span>}

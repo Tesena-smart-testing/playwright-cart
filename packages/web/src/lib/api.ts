@@ -36,7 +36,10 @@ export interface TestRecord {
   attachments: Array<{ name: string; contentType: string; filename?: string }>
 }
 
+export type AnnotatedTestRecord = TestRecord & { retried?: boolean }
+
 export type RunWithTests = RunRecord & { tests: TestRecord[] }
+export type AnnotatedRunWithTests = RunRecord & { tests: AnnotatedTestRecord[] }
 
 export class NotFoundError extends Error {
   constructor(message: string) {

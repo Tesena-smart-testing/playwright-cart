@@ -3,7 +3,7 @@ import RunHeader from '../components/RunHeader.js'
 import RunStats from '../components/RunStats.js'
 import SuiteGroup, { type SuiteTreeNode } from '../components/SuiteGroup.js'
 import { useRun } from '../hooks/useRun.js'
-import type { TestRecord } from '../lib/api.js'
+import type { AnnotatedRunWithTests, AnnotatedTestRecord, TestRecord } from '../lib/api.js'
 
 export default function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
@@ -29,7 +29,8 @@ export default function RunDetailPage() {
 
   if (!run) return null
 
-  const suites = buildSuiteTree(run.tests)
+  const annotatedRun: AnnotatedRunWithTests = { ...run, tests: annotateRetriedTests(run.tests) }
+  const suites = buildSuiteTree(annotatedRun.tests)
 
   return (
     <div>
@@ -43,11 +44,11 @@ export default function RunDetailPage() {
       </nav>
 
       {/* Run card with progress bar */}
-      <RunHeader run={run} />
-      <RunStats tests={run.tests} />
+      <RunHeader run={annotatedRun} />
+      <RunStats tests={annotatedRun.tests} />
 
       {/* Suite tree */}
-      {run.tests.length === 0 ? (
+      {annotatedRun.tests.length === 0 ? (
         <p className="py-8 text-center font-mono text-sm text-tn-muted">
           No test results uploaded yet.
         </p>
@@ -62,7 +63,33 @@ export default function RunDetailPage() {
   )
 }
 
-function buildSuiteTree(tests: TestRecord[]): Map<string, SuiteTreeNode> {
+function annotateRetriedTests(tests: TestRecord[]): AnnotatedTestRecord[] {
+  const byIdentity = new Map<string, TestRecord[]>()
+  for (const test of tests) {
+    const key = test.titlePath.join('\0')
+    const group = byIdentity.get(key) ?? []
+    group.push(test)
+    byIdentity.set(key, group)
+  }
+
+  const retriedIds = new Set<string>()
+  for (const group of byIdentity.values()) {
+    if (group.length <= 1) continue
+    const maxRetry = Math.max(...group.map((t) => t.retry))
+    const finalAttempt = group.find((t) => t.retry === maxRetry)
+    if (finalAttempt?.status === 'passed') {
+      for (const t of group) {
+        if (t.retry < maxRetry && (t.status === 'failed' || t.status === 'timedOut')) {
+          retriedIds.add(t.testId)
+        }
+      }
+    }
+  }
+
+  return tests.map((t) => (retriedIds.has(t.testId) ? { ...t, retried: true } : t))
+}
+
+function buildSuiteTree(tests: AnnotatedTestRecord[]): Map<string, SuiteTreeNode> {
   const root = new Map<string, SuiteTreeNode>()
   for (const test of tests) {
     const path = test.titlePath.slice(0, -1).filter((p) => p !== '')
@@ -72,7 +99,11 @@ function buildSuiteTree(tests: TestRecord[]): Map<string, SuiteTreeNode> {
   return root
 }
 
-function insertIntoTree(map: Map<string, SuiteTreeNode>, path: string[], test: TestRecord) {
+function insertIntoTree(
+  map: Map<string, SuiteTreeNode>,
+  path: string[],
+  test: AnnotatedTestRecord,
+) {
   const [head, ...rest] = path
   let node = map.get(head)
   if (!node) {
