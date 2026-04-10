@@ -53,5 +53,6 @@ These endpoints are used by the reporter during a Playwright test run. They requ
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/reports/*` | — | Serve extracted static report files (not under `/api/*`, no auth) |
+| `GET` | `/reports/*` | session or `?token=` | Serve extracted static report files; accepts a short-lived single-use token as `?token=<value>` for cross-origin access (e.g. trace.playwright.dev) |
+| `POST` | `/api/report-token` | session | Issue a 1-hour single-use token scoped to a single file path `{ path }` — returns `{ token }` |
 | `GET` | `/api/health` | — | Health check — returns `{ ok: true }` |

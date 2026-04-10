@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { TestRecord } from '../lib/api.js'
 
 interface Props {
@@ -22,20 +23,7 @@ export default function AttachmentList({ runId, testId, attachments }: Props) {
           const isTrace = att.name === 'trace' || att.filename?.endsWith('.zip')
 
           if (isTrace) {
-            const traceUrl = `https://trace.playwright.dev/?trace=${encodeURIComponent(
-              window.location.origin + url,
-            )}`
-            return (
-              <a
-                key={att.filename ?? att.name}
-                href={traceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-tn-blue px-4 py-1.5 font-display text-xs font-semibold text-tn-blue transition-colors hover:bg-tn-blue/10"
-              >
-                ⎘ Open Trace ↗
-              </a>
-            )
+            return <TraceButton key={att.filename ?? att.name} url={url} />
           }
 
           return (
@@ -51,6 +39,42 @@ export default function AttachmentList({ runId, testId, attachments }: Props) {
         })}
       </div>
     </div>
+  )
+}
+
+function TraceButton({ url }: { url: string }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle')
+
+  async function handleClick() {
+    setState('loading')
+    try {
+      const res = await fetch('/api/report-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: url }),
+      })
+      if (!res.ok) throw new Error('Failed to get token')
+      const { token } = (await res.json()) as { token: string }
+      const traceUrl = `https://trace.playwright.dev/?trace=${encodeURIComponent(
+        `${window.location.origin + url}?token=${token}`,
+      )}`
+      window.open(traceUrl, '_blank', 'noopener,noreferrer')
+      setState('idle')
+    } catch {
+      setState('error')
+      setTimeout(() => setState('idle'), 3000)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={state === 'loading'}
+      className="inline-flex items-center gap-2 rounded-full border border-tn-blue px-4 py-1.5 font-display text-xs font-semibold text-tn-blue transition-colors hover:bg-tn-blue/10 disabled:opacity-50"
+    >
+      {state === 'loading' ? 'Opening…' : state === 'error' ? 'Failed — retry' : '⎘ Open Trace ↗'}
+    </button>
   )
 }
 

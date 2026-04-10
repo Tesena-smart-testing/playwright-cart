@@ -92,12 +92,14 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - `users` — `id`, `username` (unique), `passwordHash` (bcrypt), `role` (admin|user), `theme` (dark|light|system)
 - `api_keys` — `id`, `keyHash` (SHA256, unique), `label`, `createdBy` (FK → users)
 - `app_settings` — `key` (PK), `value` (currently stores `data_retention_days`)
+- `report_tokens` — `id`, `tokenHash` (HMAC-SHA256, unique), `filePath`, `expiresAt` (1h); single-use (deleted on consumption), expired rows cleaned up on creation
 
 **Authentication** (`src/auth/`):
 - Dual auth: HTTP-only JWT cookie (`auth_token`, HS256, 8h) for browser sessions; `Authorization: Bearer <key>` API keys for CI/CD
 - Roles: `admin` (full control) and `user` (self-service only)
 - Middleware: `authMiddleware` (requires any auth), `adminMiddleware` (requires admin role)
-- Public paths (no auth): `POST /api/auth/login`, `GET /api/health`, `GET /reports/*` (served outside `/api/*` middleware)
+- Public paths (no auth): `POST /api/auth/login`, `GET /api/health`
+- `GET /reports/*` requires session cookie or a valid `?token=<value>` query param (single-use, 1h expiry, issued by `POST /api/report-token`)
 - Admin bootstrap: on startup, `src/db/seed.ts` creates the default admin from `ADMIN_USERNAME`/`ADMIN_PASSWORD` env vars (idempotent)
 - API keys: 32-byte random hex generated, SHA256-hashed before DB storage, raw key shown only at creation
 

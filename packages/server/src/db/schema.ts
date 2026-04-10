@@ -126,3 +126,14 @@ export const appSettings = pgTable('app_settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 })
+
+export const reportTokens = pgTable(
+  'report_tokens',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    tokenHash: text('token_hash').notNull(),
+    filePath: text('file_path').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex('report_tokens_hash_uniq').on(t.tokenHash)],
+)
