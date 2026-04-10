@@ -168,45 +168,49 @@ export class PlaywrightCartReporter implements Reporter {
 
     if (this.htmlReporterEnabled) {
       const reportDir = resolve(process.cwd(), this.reportOutputDir)
-      if (!existsSync(reportDir)) {
+      if (existsSync(reportDir)) {
+        try {
+          const zipBuf = await zipDirectory(reportDir)
+          const form = new FormData()
+          form.append(
+            'report',
+            new Blob([new Uint8Array(zipBuf)], { type: 'application/zip' }),
+            'report.zip',
+          )
+          form.append('completedAt', completedAt)
+          form.append('status', status)
+          await uploadWithRetry(
+            () =>
+              fetch(`${this.serverUrl}/api/runs/${runId}/report`, {
+                method: 'POST',
+                headers: { ...this.authHeaders() },
+                body: form,
+              }),
+            this.retries,
+            this.retryDelay,
+          )
+          return // /report already updated status — done
+        } catch (err) {
+          console.warn(`[playwright-cart] failed to upload report: ${err}`)
+          // fall through to /complete to at least update the run status
+        }
+      } else {
         console.warn(`[playwright-cart] HTML report dir not found: ${reportDir}`)
-        return
+        // fall through to /complete
       }
-      try {
-        const zipBuf = await zipDirectory(reportDir)
-        const form = new FormData()
-        form.append(
-          'report',
-          new Blob([new Uint8Array(zipBuf)], { type: 'application/zip' }),
-          'report.zip',
-        )
-        form.append('completedAt', completedAt)
-        form.append('status', status)
-        await uploadWithRetry(
-          () =>
-            fetch(`${this.serverUrl}/api/runs/${runId}/report`, {
-              method: 'POST',
-              headers: { ...this.authHeaders() },
-              body: form,
-            }),
-          this.retries,
-          this.retryDelay,
-        )
-      } catch (err) {
-        console.warn(`[playwright-cart] failed to upload report: ${err}`)
-      }
-    } else {
-      await uploadWithRetry(
-        () =>
-          fetch(`${this.serverUrl}/api/runs/${runId}/complete`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
-            body: JSON.stringify({ completedAt, status }),
-          }),
-        this.retries,
-        this.retryDelay,
-      )
     }
+
+    // Reached when: no HTML reporter, report dir missing, or report upload failed
+    await uploadWithRetry(
+      () =>
+        fetch(`${this.serverUrl}/api/runs/${runId}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...this.authHeaders() },
+          body: JSON.stringify({ completedAt, status }),
+        }),
+      this.retries,
+      this.retryDelay,
+    )
   }
 }
 
