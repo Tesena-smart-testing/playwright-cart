@@ -32,26 +32,26 @@ All endpoints are served by the server (default: `http://localhost:3001`).
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/api/settings` | — | Get settings `{ data_retention_days }` |
+| `GET` | `/api/settings` | session | Get settings `{ data_retention_days }` |
 | `PATCH` | `/api/settings` | admin | Update settings |
 
 ## Test Runs
 
-These endpoints are used by the reporter during a Playwright test run. They are public (no auth required).
+These endpoints are used by the reporter during a Playwright test run. They require authentication (Bearer API key recommended for CI/CD).
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/runs` | Create a new run — returns `{ runId }` |
-| `GET` | `/api/runs` | List all runs, newest first |
-| `GET` | `/api/runs/:runId` | Run record with all test results |
-| `GET` | `/api/runs/:runId/tests/:testId` | Fetch a single test result |
-| `POST` | `/api/runs/:runId/tests` | Upload a single test result (multipart) |
-| `POST` | `/api/runs/:runId/report` | Upload zipped HTML report |
-| `POST` | `/api/runs/:runId/complete` | Mark run complete (no HTML report) |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/runs` | session | Create a new run — returns `{ runId }` |
+| `GET` | `/api/runs` | session | List all runs, newest first |
+| `GET` | `/api/runs/:runId` | session | Run record with all test results |
+| `GET` | `/api/runs/:runId/tests/:testId` | session | Fetch a single test result |
+| `POST` | `/api/runs/:runId/tests` | session | Upload a single test result (multipart) |
+| `POST` | `/api/runs/:runId/report` | session | Upload zipped HTML report |
+| `POST` | `/api/runs/:runId/complete` | session | Mark run complete (no HTML report) |
 
 ## Other
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/reports/*` | — | Serve extracted static report files |
+| `GET` | `/reports/*` | — | Serve extracted static report files (not under `/api/*`, no auth) |
 | `GET` | `/api/health` | — | Health check — returns `{ ok: true }` |

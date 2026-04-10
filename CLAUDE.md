@@ -97,7 +97,7 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - Dual auth: HTTP-only JWT cookie (`auth_token`, HS256, 8h) for browser sessions; `Authorization: Bearer <key>` API keys for CI/CD
 - Roles: `admin` (full control) and `user` (self-service only)
 - Middleware: `authMiddleware` (requires any auth), `adminMiddleware` (requires admin role)
-- Public paths (no auth): `POST /api/auth/login`, `GET /api/health`, all `/api/runs/*`, `GET /api/settings`
+- Public paths (no auth): `POST /api/auth/login`, `GET /api/health`, `GET /reports/*` (served outside `/api/*` middleware)
 - Admin bootstrap: on startup, `src/db/seed.ts` creates the default admin from `ADMIN_USERNAME`/`ADMIN_PASSWORD` env vars (idempotent)
 - API keys: 32-byte random hex generated, SHA256-hashed before DB storage, raw key shown only at creation
 
