@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { TestRecord } from '../lib/api.js'
+import AttachmentModal from './AttachmentModal.js'
 
 interface Props {
   runId: string
@@ -8,37 +9,75 @@ interface Props {
 }
 
 export default function AttachmentList({ runId, testId, attachments }: Props) {
+  const [active, setActive] = useState<{
+    url: string
+    filename: string
+    contentType: string
+  } | null>(null)
+
   const items = attachments.filter((a) => a.filename)
 
   if (items.length === 0) return null
 
   return (
-    <div>
-      <h3 className="mb-3 font-display text-xs font-semibold uppercase tracking-widest text-tn-muted">
-        Attachments
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {items.map((att) => {
-          const url = `/reports/${runId}/attachments/${testId}/${att.filename ?? ''}`
-          const isTrace = att.name === 'trace' || att.filename?.endsWith('.zip')
+    <>
+      <div>
+        <h3 className="mb-3 font-display text-xs font-semibold uppercase tracking-widest text-tn-muted">
+          Attachments
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {items.map((att) => {
+            const url = `/reports/${runId}/attachments/${testId}/${att.filename ?? ''}`
+            const isTrace = att.name === 'trace' || att.filename?.endsWith('.zip')
+            const isViewable =
+              att.contentType.startsWith('image/') || att.contentType.startsWith('text/')
 
-          if (isTrace) {
-            return <TraceButton key={att.filename ?? att.name} url={url} />
-          }
+            if (isTrace) {
+              return <TraceButton key={att.filename ?? att.name} url={url} />
+            }
 
-          return (
-            <a
-              key={att.filename ?? att.name}
-              href={url}
-              download={att.filename}
-              className="inline-flex items-center gap-2 rounded-full border border-tn-border px-4 py-1.5 font-display text-xs text-tn-fg transition-colors hover:bg-tn-highlight"
-            >
-              {attachmentGlyph(att.contentType)} {att.name}
-            </a>
-          )
-        })}
+            if (isViewable) {
+              return (
+                <button
+                  key={att.filename ?? att.name}
+                  type="button"
+                  onClick={() =>
+                    setActive({
+                      url,
+                      filename: att.filename ?? att.name,
+                      contentType: att.contentType,
+                    })
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-tn-border px-4 py-1.5 font-display text-xs text-tn-fg transition-colors hover:bg-tn-highlight"
+                >
+                  {attachmentGlyph(att.contentType)} {att.name}
+                </button>
+              )
+            }
+
+            return (
+              <a
+                key={att.filename ?? att.name}
+                href={url}
+                download={att.filename}
+                className="inline-flex items-center gap-2 rounded-full border border-tn-border px-4 py-1.5 font-display text-xs text-tn-fg transition-colors hover:bg-tn-highlight"
+              >
+                {attachmentGlyph(att.contentType)} {att.name}
+              </a>
+            )
+          })}
+        </div>
       </div>
-    </div>
+
+      {active && (
+        <AttachmentModal
+          url={active.url}
+          filename={active.filename}
+          contentType={active.contentType}
+          onClose={() => setActive(null)}
+        />
+      )}
+    </>
   )
 }
 
