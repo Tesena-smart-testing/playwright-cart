@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Props {
   url: string
@@ -20,7 +21,7 @@ export default function AttachmentModal({ url, filename, contentType, onClose }:
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  return (
+  return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions: backdrop click-to-close; Escape key handled via useEffect
     // biome-ignore lint/a11y/useKeyWithClickEvents: Escape key handled via useEffect above
     <div
@@ -43,7 +44,8 @@ export default function AttachmentModal({ url, filename, contentType, onClose }:
           <TextBody url={url} filename={filename} contentType={contentType} />
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

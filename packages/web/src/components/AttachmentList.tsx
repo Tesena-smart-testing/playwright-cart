@@ -119,6 +119,7 @@ function TraceButton({ url }: { url: string }) {
 
 function attachmentGlyph(contentType: string): string {
   if (contentType.startsWith('image/')) return '▣'
+  if (contentType.startsWith('text/')) return '≡'
   if (contentType.startsWith('video/')) return '▶'
   if (contentType === 'application/zip') return '↓'
   return '→'
