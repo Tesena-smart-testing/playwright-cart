@@ -60,6 +60,7 @@ authRouter.get('/me', (c) => {
     username: authUser.username,
     role: authUser.role,
     theme: authUser.theme,
+    runsPerPage: authUser.runsPerPage,
     expiresAt: authUser.exp,
   })
 })

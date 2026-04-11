@@ -5,6 +5,7 @@ export type AuthUser =
       username: string
       role: 'admin' | 'user'
       theme: 'dark' | 'light' | 'system'
+      runsPerPage: number
       exp: number
       jti: string
     }
