@@ -42,7 +42,7 @@ export default function AttachmentModal({ url, filename, contentType, onClose }:
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-tn-border bg-tn-panel shadow-2xl"
+        className="flex w-[75vw] h-[75vh] flex-col overflow-hidden rounded-xl border border-tn-border bg-tn-panel shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <ModalHeader filename={filename} titleId={titleId} onClose={onClose} />
@@ -170,14 +170,14 @@ function ImageBody({
 
   return (
     <>
-      <div className="flex min-h-48 items-center justify-center bg-tn-bg p-4">
+      <div className="flex flex-1 min-h-0 items-center justify-center bg-tn-bg p-4">
         {imgError ? (
           <p className="text-sm text-tn-red">Failed to load image</p>
         ) : (
           <img
             src={url}
             alt={filename}
-            className="max-h-[60vh] max-w-full rounded object-contain"
+            className="max-h-full max-w-full rounded object-contain"
             onError={() => setImgError(true)}
           />
         )}
@@ -246,7 +246,7 @@ function TextBody({
 
   return (
     <>
-      <div className="max-h-[60vh] overflow-auto bg-tn-bg p-4">
+      <div className="flex-1 min-h-0 overflow-auto bg-tn-bg p-4">
         {fetchError ? (
           <p className="text-sm text-tn-red">Failed to load content</p>
         ) : text === null ? (
