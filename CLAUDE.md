@@ -91,7 +91,7 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - Uses **Drizzle ORM** + PostgreSQL for structured data
 - Binary files (screenshots, traces, extracted HTML reports) remain on disk at `{DATA_DIR}/{runId}/attachments/` and `{DATA_DIR}/{runId}/report/`
 - Runs DB migrations at startup via `src/db/migrate.ts` (Drizzle migrate)
-- Env vars: `DATABASE_URL` (required), `DATA_DIR` (default `./data`), `PORT` (default `3001`), `ADMIN_USERNAME` (default `admin`), `ADMIN_PASSWORD` (default `changeme123`), `JWT_SECRET` (required in production), `NODE_ENV` (`production` enables secure cookies)
+- Env vars: `DATABASE_URL` (required), `DATA_DIR` (default `./data`), `PORT` (default `3001`), `ADMIN_USERNAME` (default `admin`), `ADMIN_PASSWORD` (default `changeme123`), `JWT_SECRET` (required in production), `NODE_ENV` (`production` enables secure cookies), `ALLOWED_ORIGIN` (CORS allowed origin, default `http://localhost:5173`; prod compose requires explicit value)
 
 **DB schema** (`src/db/schema.ts`):
 - `runs` — `runId`, `project`, `branch`, `commitSha`, `startedAt`, `completedAt`, `status`, `reportUrl`

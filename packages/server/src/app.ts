@@ -23,7 +23,13 @@ export const app = new Hono<HonoEnv>()
 const PUBLIC_PATHS = new Set(['/api/auth/login', '/api/health'])
 
 app.use('*', logger())
-app.use('/api/*', cors())
+app.use(
+  '/api/*',
+  cors({
+    origin: process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173',
+    credentials: true,
+  }),
+)
 app.get('/api/health', (c) => c.json({ ok: true }))
 app.use(
   '/api/auth/login',
@@ -65,7 +71,12 @@ app.route('/api/users', usersRouter)
 app.route('/api/settings', settingsRouter)
 app.route('/api/api-keys', apiKeysRouter)
 
-app.use('/reports/*', cors())
+app.use(
+  '/reports/*',
+  cors({
+    origin: [process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173', 'https://trace.playwright.dev'],
+  }),
+)
 app.use('/reports/*', async (c, next) => {
   const token = c.req.query('token')
   if (token) {

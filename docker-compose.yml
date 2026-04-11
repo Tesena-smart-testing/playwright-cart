@@ -35,6 +35,7 @@ services:
       ADMIN_USERNAME: "${ADMIN_USERNAME:-admin}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-changeme123}"
       JWT_SECRET: "${JWT_SECRET:-change-this-secret-in-production}"
+      ALLOWED_ORIGIN: "${ALLOWED_ORIGIN:-http://localhost:5173}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
       interval: 10s
