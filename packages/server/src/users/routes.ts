@@ -82,12 +82,14 @@ usersRouter.patch('/me', async (c) => {
     password?: unknown
     currentPassword?: unknown
     theme?: unknown
+    runsPerPage?: unknown
   }>()
 
   const updateData: Partial<{
     username: string
     passwordHash: string
     theme: 'dark' | 'light' | 'system'
+    runsPerPage: number
   }> = {}
 
   // Password change: currentPassword required and verified
@@ -145,12 +147,25 @@ usersRouter.patch('/me', async (c) => {
     updateData.theme = body.theme
   }
 
+  if (body.runsPerPage !== undefined) {
+    if (![10, 25, 50, 100].includes(body.runsPerPage as number)) {
+      return c.json({ error: 'runsPerPage must be 10, 25, 50, or 100' }, 400)
+    }
+    updateData.runsPerPage = body.runsPerPage as number
+  }
+
   if (Object.keys(updateData).length === 0) {
     return c.json({ error: 'No valid fields to update' }, 400)
   }
 
   let updated:
-    | { id: number; username: string; role: 'admin' | 'user'; theme: 'dark' | 'light' | 'system' }
+    | {
+        id: number
+        username: string
+        role: 'admin' | 'user'
+        theme: 'dark' | 'light' | 'system'
+        runsPerPage: number
+      }
     | undefined
   try {
     ;[updated] = await db.update(users).set(updateData).where(eq(users.id, authUser.id)).returning({
@@ -158,6 +173,7 @@ usersRouter.patch('/me', async (c) => {
       username: users.username,
       role: users.role,
       theme: users.theme,
+      runsPerPage: users.runsPerPage,
     })
   } catch (err: unknown) {
     // Unique constraint violation on username
