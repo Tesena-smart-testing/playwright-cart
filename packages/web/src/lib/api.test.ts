@@ -10,26 +10,42 @@ afterEach(() => {
 })
 
 describe('fetchRuns', () => {
-  it('fetches /api/runs and returns the array', async () => {
-    const mockRuns = [
-      {
-        runId: 'run-1',
-        project: 'my-app',
-        startedAt: '2026-04-02T10:00:00.000Z',
-        status: 'passed',
-      },
-    ]
-    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(mockRuns), { status: 200 }))
+  it('fetches /api/runs with pagination params and returns RunsPage', async () => {
+    const mockPage = {
+      runs: [
+        {
+          runId: 'run-1',
+          project: 'my-app',
+          startedAt: '2026-04-02T10:00:00.000Z',
+          status: 'passed',
+        },
+      ],
+      total: 1,
+      totalPassed: 1,
+      totalFailed: 0,
+      page: 1,
+      pageSize: 10,
+    }
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(mockPage), { status: 200 }))
 
-    const result = await fetchRuns()
+    const result = await fetchRuns({ page: 1, pageSize: 10 })
 
-    expect(fetch).toHaveBeenCalledWith('/api/runs')
-    expect(result).toEqual(mockRuns)
+    expect(fetch).toHaveBeenCalledWith('/api/runs?page=1&pageSize=10')
+    expect(result).toEqual(mockPage)
+  })
+
+  it('includes filter params in the query string when provided', async () => {
+    const mockPage = { runs: [], total: 0, totalPassed: 0, totalFailed: 0, page: 1, pageSize: 25 }
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(mockPage), { status: 200 }))
+
+    await fetchRuns({ page: 1, pageSize: 25, project: 'my-app', status: 'failed' })
+
+    expect(fetch).toHaveBeenCalledWith('/api/runs?page=1&pageSize=25&project=my-app&status=failed')
   })
 
   it('throws on non-ok response', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response('', { status: 500 }))
-    await expect(fetchRuns()).rejects.toThrow('HTTP 500')
+    await expect(fetchRuns({ page: 1, pageSize: 10 })).rejects.toThrow('HTTP 500')
   })
 })
 
