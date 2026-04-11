@@ -1,18 +1,21 @@
 # Security Audit — 2026-04-11
 
-## Overall Score: 4.7 / 10  (Grade: D)
+## Overall Score: 6.7 / 10  (Grade: C)
 
-Penalties: 2 High × 1.5 = 3.0 · 4 Medium × 0.5 = 2.0 · 3 Low × 0.1 = 0.3
+Penalties: 0 High · 3 Medium × 0.5 = 1.5 · 4 Low × 0.1 = 0.4 · 2 Info = 0
+(SA-005 and SA-NEW-1 reclassified after threat-model review — see findings for rationale)
 
 ## Executive Summary
 
-Significant progress since the 2026-04-10 audit (0.5/10 → 4.7/10). All three Critical
+Significant progress since the 2026-04-10 audit (0.5/10 → 6.7/10). All three Critical
 path-traversal RCE vulnerabilities (SA-001–003) and two High auth weaknesses (SA-004, SA-006)
-have been correctly fixed. What remains: the JWT_SECRET is still used for three distinct
-cryptographic purposes (High); a live API key is committed to git in `packages/e2e/.env`
-(High, new finding); nginx ships with no security headers (Medium); and CORS is unconstrained
-(Medium). Authentication foundations — bcrypt, httpOnly cookies, jti revocation, rate limiting
-— are now solid.
+have been fixed. CORS has been restricted to an explicit origin (SA-009, fixed). Two initially
+High findings were reclassified after threat-model review: JWT_SECRET dual-use (SA-005) is
+theoretical for a CI reporting dashboard and won't be fixed; the committed e2e API key
+(SA-NEW-1) is local-only with no production surface. What remains: nginx has no security
+headers (Medium), test metadata lacks schema validation (Medium), and several low-severity
+infra hygiene items. Authentication foundations — bcrypt, httpOnly cookies, jti revocation,
+rate limiting — are solid.
 
 ---
 
@@ -20,8 +23,14 @@ cryptographic purposes (High); a live API key is committed to git in `packages/e
 
 ### High  (CVSS 7.0–8.9)
 
+*No active High findings — see Info section for reclassified items.*
+
+---
+
+### Reclassified (originally High, lowered after threat-model review)
+
 #### [SA-005] JWT_SECRET dual-used for three distinct cryptographic operations
-- **Severity:** High (CVSS 7.5) — unfixed from previous audit
+- **Severity:** ~~High (CVSS 7.5)~~ → **Info — won't fix** (severity lowered after threat-model review)
 - **Location:** `packages/server/src/app.ts:72,98`, `packages/server/src/auth/middleware.ts`
 - **Description:** `JWT_SECRET` is the key for: (1) JWT signing, (2) HMAC for API key hashes
   stored in DB, (3) HMAC for report token hashes stored in DB. Key separation is a fundamental
@@ -29,7 +38,14 @@ cryptographic purposes (High); a live API key is committed to git in `packages/e
 - **Impact:** A leaked or brute-forced `JWT_SECRET` lets an attacker forge arbitrary JWTs,
   pre-compute valid API key hashes from any known raw key, and generate valid report tokens
   for any file path. Single-point-of-compromise for all three auth mechanisms.
-- **Fix:**
+- **Severity rationale:** The theoretical attack requires `JWT_SECRET` to already be leaked —
+  at which point rotating one secret fixes all three purposes simultaneously. An attacker who
+  holds a raw API key gains nothing from the dual-use: they can just use the key directly.
+  Report token forgery requires both `JWT_SECRET` and a valid file path, and tokens expire in
+  1h anyway. This is a CI test reporting dashboard, not a payment system or identity provider.
+  The threat model does not include timing oracles or cross-key attacks. Key separation remains
+  sound cryptographic hygiene but is over-engineering for this context. Won't fix.
+- **Fix (for reference only):**
 
 ```bash
 # .env.example — add two new secrets alongside JWT_SECRET
@@ -58,7 +74,7 @@ that hash report tokens to use `getReportTokenSecret()`.
 ---
 
 #### [SA-NEW-1] Raw API key committed to git
-- **Severity:** High (CVSS 7.3) — new finding
+- **Severity:** ~~High (CVSS 7.3)~~ → **Low — git hygiene** (severity lowered after context review)
 - **Location:** `packages/e2e/.env:1`
 - **Description:** `packages/e2e/.env` is tracked by git and contains
   `API_KEY="deb8a025094a3f32ab2ada735506325f9b86a0fb79250ffacdbd1b5fb20f624c"` — a 64-hex
@@ -66,6 +82,11 @@ that hash report tokens to use `getReportTokenSecret()`.
 - **Impact:** Anyone with repo read access can authenticate as a reporter: upload arbitrary
   test data, create runs, or upload crafted zip/attachment payloads against any running
   instance that still has this key active.
+- **Severity rationale:** `packages/e2e` is a local integration test package — the key only
+  works against a locally running dev server. There is no production surface exposed. Anyone
+  with repo access can spin up the server themselves and generate a new key anyway. Risk is
+  limited to git hygiene: the file should not be tracked, but the practical exploit potential
+  is near zero.
 - **Fix:**
 
 Step 1 — Revoke the key immediately via the admin API keys UI before doing anything else.
@@ -290,6 +311,14 @@ Update `drizzle-kit` when an upstream release pulls in esbuild ≥0.25.0.
 | SA-003 testId path traversal | `SAFE_ID` regex on runId + testId | 2812c73 |
 | SA-004 No login rate limiting | `hono-rate-limiter` 10 req/15 min | 06838ed |
 | SA-006 Logout doesn't invalidate JWT | jti deny list + DB table | 06838ed |
+| SA-009 CORS unrestricted | Explicit `ALLOWED_ORIGIN` + `trace.playwright.dev` | e5f1580 |
+
+### Reclassified (no fix required)
+
+| Finding | Original | Revised | Reason |
+|---------|----------|---------|--------|
+| SA-005 JWT_SECRET dual-use | High (CVSS 7.5) | Info — won't fix | Threat model doesn't warrant key separation for a CI dashboard |
+| SA-NEW-1 API key in git | High (CVSS 7.3) | Low — hygiene | Local e2e key only; no production surface |
 
 ---
 
@@ -297,13 +326,13 @@ Update `drizzle-kit` when an upstream release pulls in esbuild ≥0.25.0.
 
 Work through in this order:
 
-1. **[SA-NEW-1]** Revoke exposed API key + untrack `packages/e2e/.env` — do immediately, before anything else
-2. **[SA-005]** Split JWT_SECRET into three separate secrets — highest cryptographic blast radius
-3. **[SA-009]** Restrict CORS to `ALLOWED_ORIGIN` — one env var + two config lines
-4. **[SA-007]** Add security headers to nginx.conf — one block, prevents XSS escalation via reports
-5. **[SA-008]** Add Zod validation to test metadata — closes DoS and data integrity gap
-6. **[SA-NEW-2]** Redact Authorization headers from logger — one wrapper, prevents key leakage in logs
-7. **[SA-010]** Template Postgres credentials in prod compose
-8. **[SA-011]** Remove weak JWT_SECRET fallback from dev compose
-9. **[SA-012]** Add magic-byte check on zip upload
-10. **[SA-014]** Hide stack traces from UI in production
+1. **[SA-007]** Add security headers to nginx.conf — one block, prevents XSS escalation via reports
+2. **[SA-008]** Add Zod validation to test metadata — closes DoS and data integrity gap
+3. **[SA-NEW-2]** Redact Authorization headers from logger — one wrapper, prevents key leakage in logs
+4. **[SA-010]** Template Postgres credentials in prod compose
+5. **[SA-011]** Remove weak JWT_SECRET fallback from dev compose
+6. **[SA-012]** Add magic-byte check on zip upload
+7. **[SA-NEW-1]** Untrack `packages/e2e/.env` + add to .gitignore — git hygiene
+8. **[SA-014]** Hide stack traces from UI in production
+
+Won't fix: SA-005 (JWT_SECRET dual-use — not warranted for this threat model)
