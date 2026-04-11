@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -Rs '{hookSpecificOutput: {hookEventName: \"SessionStart\", additionalContext: (\"Caveman skill — apply these communication rules for this session:\\n\" + .)}}' .claude/skills/caveman/SKILL.md",
+            "command": "node -e \"const fs=require('fs');const skill=fs.readFileSync('.claude/skills/caveman/SKILL.md','utf8');process.stdout.write(JSON.stringify({hookSpecificOutput:{hookEventName:'SessionStart',additionalContext:'Caveman skill — apply these communication rules for this session:\\n'+skill}}));\"",
             "statusMessage": "Loading caveman skill..."
           }
         ]
