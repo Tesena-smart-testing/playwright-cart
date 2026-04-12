@@ -62,12 +62,8 @@
           "name": "api_keys_created_by_users_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -248,12 +244,8 @@
           "name": "test_annotations_test_pk_tests_id_fk",
           "tableFrom": "test_annotations",
           "tableTo": "tests",
-          "columnsFrom": [
-            "test_pk"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_pk"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -311,12 +303,8 @@
           "name": "test_attachments_test_pk_tests_id_fk",
           "tableFrom": "test_attachments",
           "tableTo": "tests",
-          "columnsFrom": [
-            "test_pk"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_pk"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -368,12 +356,8 @@
           "name": "test_errors_test_pk_tests_id_fk",
           "tableFrom": "test_errors",
           "tableTo": "tests",
-          "columnsFrom": [
-            "test_pk"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["test_pk"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -500,12 +484,8 @@
           "name": "tests_run_id_runs_run_id_fk",
           "tableFrom": "tests",
           "tableTo": "runs",
-          "columnsFrom": [
-            "run_id"
-          ],
-          "columnsTo": [
-            "run_id"
-          ],
+          "columnsFrom": ["run_id"],
+          "columnsTo": ["run_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -576,9 +556,7 @@
         "users_username_unique": {
           "name": "users_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -590,41 +568,22 @@
     "public.run_status": {
       "name": "run_status",
       "schema": "public",
-      "values": [
-        "running",
-        "passed",
-        "failed",
-        "interrupted",
-        "timedOut"
-      ]
+      "values": ["running", "passed", "failed", "interrupted", "timedOut"]
     },
     "public.test_status": {
       "name": "test_status",
       "schema": "public",
-      "values": [
-        "passed",
-        "failed",
-        "timedOut",
-        "skipped",
-        "interrupted"
-      ]
+      "values": ["passed", "failed", "timedOut", "skipped", "interrupted"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "user"
-      ]
+      "values": ["admin", "user"]
     },
     "public.user_theme": {
       "name": "user_theme",
       "schema": "public",
-      "values": [
-        "dark",
-        "light",
-        "system"
-      ]
+      "values": ["dark", "light", "system"]
     }
   },
   "schemas": {},
