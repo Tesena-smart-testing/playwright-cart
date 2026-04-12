@@ -50,3 +50,6 @@ packages/server/data/
 html-report
 playwright-report
 .superpowers/
+
+# Generated trace viewer assets
+packages/web/public/trace-viewer/

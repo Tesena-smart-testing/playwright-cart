@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "copy-trace-viewer": "node scripts/copy-trace-viewer.mjs",
+    "predev": "pnpm copy-trace-viewer",
     "dev": "vite",
+    "prebuild": "pnpm copy-trace-viewer",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -25,6 +28,7 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "vite": "^8.0.5",
+    "playwright-core": "^1.49.0",
     "vitest": "^4.1.2"
   }
 }
