@@ -15,6 +15,7 @@ COPY packages/web/tsconfig.json ./packages/web/
 COPY packages/web/index.html ./packages/web/
 COPY packages/web/vite.config.ts ./packages/web/
 COPY packages/web/public/ ./packages/web/public/
+COPY packages/web/scripts/ ./packages/web/scripts/
 COPY packages/web/src/ ./packages/web/src/
 RUN pnpm --filter @playwright-cart/web run build
 
