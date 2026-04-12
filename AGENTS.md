@@ -99,10 +99,11 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - `test_errors` — `id`, `testPk` (FK), `position`, `message`, `stack`
 - `test_annotations` — `id`, `testPk` (FK), `position`, `type`, `description`
 - `test_attachments` — `id`, `testPk` (FK), `position`, `name`, `contentType`, `filename`
-- `users` — `id`, `username` (unique), `passwordHash` (bcrypt), `role` (admin|user), `theme` (dark|light|system)
-- `api_keys` — `id`, `keyHash` (SHA256, unique), `label`, `createdBy` (FK → users)
+- `users` — `id`, `username` (unique), `passwordHash` (bcrypt), `role` (admin|user), `theme` (dark|light|system), `runsPerPage` (smallint, default 10), `createdAt`
+- `api_keys` — `id`, `keyHash` (SHA256, unique), `label`, `createdBy` (FK → users), `createdAt`
 - `app_settings` — `key` (PK), `value` (currently stores `data_retention_days`; default 90 days)
 - `report_tokens` — `id`, `tokenHash` (HMAC-SHA256, unique), `filePath`, `expiresAt` (1h); single-use (deleted on consumption), expired rows cleaned up on creation
+- `revoked_tokens` — `jti` (PK), `exp`; stores revoked JWT IDs on logout until token expiry
 
 **Retention job** (`src/retention.ts`):
 - `startRetentionJob()` runs hourly via `setInterval`; deletes runs (and cascades to all child rows + disk files) older than `data_retention_days` setting (default 90)
@@ -113,6 +114,8 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - Roles: `admin` (full control) and `user` (self-service only)
 - Middleware: `authMiddleware` (requires any auth), `adminMiddleware` (requires admin role)
 - **All `/api/*` routes require auth** except `POST /api/auth/login` and `GET /api/health` — this means reporter uploads require `apiKey` in any deployed setup
+- `POST /api/auth/login` is rate-limited: 10 requests per 15-minute window, keyed by `x-real-ip` / `x-forwarded-for`
+- JWT revocation on logout: JTI stored in `revoked_tokens` table; checked on every authenticated request until token expiry
 - `GET /reports/*` requires session cookie or a valid `?token=<value>` query param (single-use, 1h expiry, issued by `POST /api/report-token`)
 - Admin bootstrap: on startup, `src/db/seed.ts` creates the default admin from `ADMIN_USERNAME`/`ADMIN_PASSWORD` env vars (idempotent)
 - API keys: 32-byte random hex generated, HMAC-SHA256-hashed before DB storage, raw key shown only at creation

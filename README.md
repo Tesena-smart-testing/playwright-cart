@@ -114,7 +114,7 @@ On first startup the server creates an admin account from the `ADMIN_USERNAME` a
 | Role | Capabilities |
 |------|-------------|
 | `admin` | Manage users, create/revoke API keys, configure settings, view all runs |
-| `user` | View all runs, update own username/password/theme |
+| `user` | View all runs, update own username/password/theme/runs-per-page setting |
 
 ### API keys for CI/CD
 
@@ -153,6 +153,7 @@ cp .env.example .env
 | `ADMIN_PASSWORD` | `changeme123` | Password for the initial admin account — **change in production** |
 | `JWT_SECRET` | *(insecure default)* | Secret for signing JWT session tokens. Generate with `openssl rand -hex 32`. **Must be set in production.** |
 | `NODE_ENV` | `development` | Set to `production` to enable secure (HTTPS-only) cookies |
+| `ALLOWED_ORIGIN` | `http://localhost:5173` | CORS allowed origin for `/api/*` and `/reports/*`. Set to your dashboard URL in production. |
 
 ---
 
