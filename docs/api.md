@@ -42,17 +42,25 @@ These endpoints are used by the reporter during a Playwright test run. They requ
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/runs` | session | Create a new run — returns `{ runId }` |
-| `GET` | `/api/runs` | session | List all runs, newest first |
+| `GET` | `/api/runs` | session | List runs (paginated); query params: `page`, `pageSize` (10/25/50/100), `project`, `branch`, `status` |
+| `GET` | `/api/runs/meta` | session | Distinct `{ projects, branches }` for filter dropdowns |
 | `GET` | `/api/runs/:runId` | session | Run record with all test results |
 | `GET` | `/api/runs/:runId/tests/:testId` | session | Fetch a single test result |
 | `POST` | `/api/runs/:runId/tests` | session | Upload a single test result (multipart) |
 | `POST` | `/api/runs/:runId/report` | session | Upload zipped HTML report |
 | `POST` | `/api/runs/:runId/complete` | session | Mark run complete (no HTML report) |
+| `DELETE` | `/api/runs/:runId` | admin | Delete a single run and all associated data |
+| `POST` | `/api/runs/delete-batch` | admin | Delete multiple runs `{ runIds: string[] }` — returns `{ deleted: number }` |
+
+## Events
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/events` | session | SSE stream of run lifecycle events (`run:created`, `run:updated`); keepalive comment every 15 s |
 
 ## Other
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `GET` | `/reports/*` | session or `?token=` | Serve extracted static report files; accepts a short-lived single-use token as `?token=<value>` for cross-origin access (e.g. trace.playwright.dev) |
-| `POST` | `/api/report-token` | session | Issue a 1-hour single-use token scoped to a single file path `{ path }` — returns `{ token }` |
+| `GET` | `/reports/*` | session | Serve extracted static report files |
 | `GET` | `/api/health` | — | Health check — returns `{ ok: true }` |
