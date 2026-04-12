@@ -82,37 +82,19 @@ export default function AttachmentList({ runId, testId, attachments }: Props) {
 }
 
 function TraceButton({ url }: { url: string }) {
-  const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle')
-
-  async function handleClick() {
-    setState('loading')
-    try {
-      const res = await fetch('/api/report-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: url }),
-      })
-      if (!res.ok) throw new Error('Failed to get token')
-      const { token } = (await res.json()) as { token: string }
-      const traceUrl = `https://trace.playwright.dev/?trace=${encodeURIComponent(
-        `${window.location.origin + url}?token=${token}`,
-      )}`
-      window.open(traceUrl, '_blank', 'noopener,noreferrer')
-      setState('idle')
-    } catch {
-      setState('error')
-      setTimeout(() => setState('idle'), 3000)
-    }
+  function handleClick() {
+    // url is always a same-origin /reports/... path — never accept external URLs
+    const traceUrl = `/trace-viewer/?trace=${encodeURIComponent(window.location.origin + url)}`
+    window.open(traceUrl, '_blank', 'noopener,noreferrer')
   }
 
   return (
     <button
       type="button"
       onClick={handleClick}
-      disabled={state === 'loading'}
-      className="inline-flex items-center gap-2 rounded-full border border-tn-blue px-4 py-1.5 font-display text-xs font-semibold text-tn-blue transition-colors hover:bg-tn-blue/10 disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-full border border-tn-blue px-4 py-1.5 font-display text-xs font-semibold text-tn-blue transition-colors hover:bg-tn-blue/10"
     >
-      {state === 'loading' ? 'Opening…' : state === 'error' ? 'Failed — retry' : '⎘ Open Trace ↗'}
+      ⎘ Open Trace ↗
     </button>
   )
 }
