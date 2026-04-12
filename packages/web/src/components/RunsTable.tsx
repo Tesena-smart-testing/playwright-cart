@@ -139,7 +139,14 @@ export default function RunsTable({ runs, isAdmin, retentionDays, onDeleteSucces
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={run.status} />
+                  <div className="flex flex-col gap-1">
+                    <StatusBadge status={run.status} />
+                    {(run.flakyCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-tn-yellow/15 px-2 py-0.5 font-display text-xs font-semibold text-tn-yellow">
+                        ↻ {run.flakyCount} flaky
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 font-mono text-xs text-tn-muted">
                   {formatRelativeTime(run.startedAt)}
