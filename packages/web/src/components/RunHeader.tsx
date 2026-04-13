@@ -53,12 +53,20 @@ export default function RunHeader({ run }: Props) {
 function PassRateBar({ tests }: { tests: AnnotatedTestRecord[] }) {
   if (tests.length === 0) return null
 
-  const passed = tests.filter((t) => t.status === 'passed').length
-  const failed = tests.filter((t) => !t.retried && t.status === 'failed').length
-  const timedOut = tests.filter((t) => !t.retried && t.status === 'timedOut').length
-  const flaky = tests.filter((t) => t.retried).length
-  const skipped = tests.filter((t) => t.status === 'skipped').length
-  const total = tests.length
+  const finalTests = tests.filter((t) => !t.retried)
+  const retriedTests = new Set(tests.filter((t) => t.retried).map(getTestIdentityKey))
+  const passed = finalTests.filter(
+    (t) => t.status === 'passed' && !retriedTests.has(getTestIdentityKey(t)),
+  ).length
+  const failed = finalTests.filter((t) => t.status === 'failed').length
+  const timedOut = finalTests.filter((t) => t.status === 'timedOut').length
+  const flaky = finalTests.filter(
+    (t) => t.status === 'passed' && retriedTests.has(getTestIdentityKey(t)),
+  ).length
+  const skipped = finalTests.filter((t) => t.status === 'skipped').length
+  const total = finalTests.length
+
+  if (total === 0) return null
 
   const passedPct = (passed / total) * 100
   const failedPct = ((failed + timedOut) / total) * 100
@@ -90,4 +98,8 @@ function PassRateBar({ tests }: { tests: AnnotatedTestRecord[] }) {
       </div>
     </div>
   )
+}
+
+function getTestIdentityKey(test: Pick<AnnotatedTestRecord, 'titlePath'>) {
+  return test.titlePath.join('\0')
 }
