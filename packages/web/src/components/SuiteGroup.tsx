@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import type { AnnotatedTestRecord, TestStatus } from '../lib/api.js'
 import { formatDuration } from '../lib/format.js'
 import { collectUniqueTags, getVisibleTags } from '../lib/tags.js'
+import { getSuitePathKey } from '../pages/RunDetailPage.js'
 import TagChip from './TagChip.js'
 
 export interface SuiteTreeNode {
@@ -14,6 +15,8 @@ interface Props {
   runId: string
   name: string
   node: SuiteTreeNode
+  path: string[]
+  defaultOpenPaths: ReadonlySet<string>
   selectedTags?: string[]
   depth?: number
 }
@@ -24,8 +27,16 @@ function getPadding(depth: number) {
   return DEPTH_PADDING[Math.min(depth, DEPTH_PADDING.length - 1)]
 }
 
-export default function SuiteGroup({ runId, name, node, selectedTags = [], depth = 0 }: Props) {
-  const [open, setOpen] = useState(true)
+export default function SuiteGroup({
+  runId,
+  name,
+  node,
+  path,
+  defaultOpenPaths,
+  selectedTags = [],
+  depth = 0,
+}: Props) {
+  const [open, setOpen] = useState(() => defaultOpenPaths.has(getSuitePathKey(path)))
   const { total, failed, flaky } = countTests(node)
   const visibleSuiteTags = getVisibleTags(collectNodeTags(node), selectedTags)
 
@@ -113,6 +124,8 @@ export default function SuiteGroup({ runId, name, node, selectedTags = [], depth
                   runId={runId}
                   name={childName}
                   node={childNode}
+                  path={[...path, childName]}
+                  defaultOpenPaths={defaultOpenPaths}
                   selectedTags={selectedTags}
                   depth={depth + 1}
                 />

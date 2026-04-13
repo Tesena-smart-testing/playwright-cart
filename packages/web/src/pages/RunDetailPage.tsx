@@ -37,6 +37,7 @@ export default function RunDetailPage() {
   const selectedTags = params.getAll('tag').sort()
   const filteredTests = annotatedRun.tests.filter((test) => matchesAllTags(test.tags, selectedTags))
   const suites = buildSuiteTree(filteredTests)
+  const defaultOpenPaths = buildDefaultOpenPaths(filteredTests)
   const availableTags = collectUniqueTags(annotatedRun.tests.map((test) => test.tags))
 
   function setSelectedTags(tags: string[]) {
@@ -86,6 +87,8 @@ export default function RunDetailPage() {
               runId={run.runId}
               name={name}
               node={node}
+              path={[name]}
+              defaultOpenPaths={defaultOpenPaths}
               selectedTags={selectedTags}
             />
           ))}
@@ -95,14 +98,41 @@ export default function RunDetailPage() {
   )
 }
 
-function buildSuiteTree(tests: AnnotatedTestRecord[]): Map<string, SuiteTreeNode> {
+export function buildSuiteTree(tests: AnnotatedTestRecord[]): Map<string, SuiteTreeNode> {
   const root = new Map<string, SuiteTreeNode>()
   for (const test of tests) {
-    const path = test.titlePath.slice(0, -1).filter((p) => p !== '')
-    const effectivePath = path.length > 0 ? path : ['Uncategorized']
+    const effectivePath = getSuitePath(test)
     insertIntoTree(root, effectivePath, test)
   }
   return root
+}
+
+export function buildDefaultOpenPaths(tests: AnnotatedTestRecord[]): Set<string> {
+  const openPaths = new Set<string>()
+
+  for (const test of tests) {
+    if (!isUltimatelyFailed(test)) continue
+
+    const path = getSuitePath(test)
+    for (let i = 1; i <= path.length; i += 1) {
+      openPaths.add(getSuitePathKey(path.slice(0, i)))
+    }
+  }
+
+  return openPaths
+}
+
+function getSuitePath(test: AnnotatedTestRecord): string[] {
+  const path = test.titlePath.slice(0, -1).filter((part) => part !== '')
+  return path.length > 0 ? path : ['Uncategorized']
+}
+
+function isUltimatelyFailed(test: AnnotatedTestRecord): boolean {
+  return !test.retried && (test.status === 'failed' || test.status === 'timedOut')
+}
+
+export function getSuitePathKey(path: string[]): string {
+  return path.join('\0')
 }
 
 function insertIntoTree(
