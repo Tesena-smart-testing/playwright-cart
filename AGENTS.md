@@ -4,7 +4,7 @@ This file provides guidance to AI coding agents (e.g. OpenAI Codex) when working
 
 ## Agent Behavior
 
-**Always load the caveman skill at the start of every session** by reading `.agents/skills/caveman/SKILL.md` and applying its communication rules for all responses.
+**Always load the caveman skill at the start of every session** and apply its communication rules for all responses.
 
 ## Commands
 
@@ -25,7 +25,7 @@ pnpm format
 pnpm typecheck
 
 # Run full stack with Docker
-docker-compose up
+docker compose up
 ```
 
 Individual package commands (from root with `--filter`):
@@ -35,12 +35,14 @@ pnpm --filter @playwright-cart/web dev                           # Vite dev serv
 pnpm --filter @radekbednarik/playwright-cart-reporter dev        # tsc watch mode
 ```
 
-Run tests (reporter and server both use Vitest):
+Run tests (reporter, server, and web use Vitest):
 ```bash
 pnpm --filter @radekbednarik/playwright-cart-reporter test       # run once
 pnpm --filter @radekbednarik/playwright-cart-reporter test:watch # watch mode
 pnpm --filter @playwright-cart/server test
 pnpm --filter @playwright-cart/server test:watch
+pnpm --filter @playwright-cart/web test
+pnpm --filter @playwright-cart/web test:watch
 ```
 
 Run e2e tests (requires server + DB running):
@@ -73,15 +75,16 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
   export default defineConfig({
     reporter: [
       ['html'],
-      ['@radekbednarik/playwright-cart-reporter', {
-        serverUrl: 'http://localhost:3001',              // required
-        project: 'my-app',                               // required
-        branch: process.env.BRANCH,                      // optional
-        commitSha: process.env.COMMIT_SHA,               // optional
-        apiKey: process.env.PLAYWRIGHT_CART_API_KEY,     // optional: Bearer token for auth
-        uploadConcurrency: 3,                            // optional: max parallel test uploads, default: 3
-        retries: 3,                                      // optional: upload retry attempts, default: 3
-        retryDelay: 500,                                 // optional: initial retry backoff ms, doubles each attempt, default: 500
+       ['@radekbednarik/playwright-cart-reporter', {
+         serverUrl: 'http://localhost:3001',              // required
+         project: 'my-app',                               // required
+         branch: process.env.BRANCH,                      // optional
+         commitSha: process.env.COMMIT_SHA,               // optional
+         tags: ['@smoke', '@checkout'],                   // optional: shown in UI and filterable later
+         apiKey: process.env.PLAYWRIGHT_CART_API_KEY,     // optional: Bearer token for auth
+         uploadConcurrency: 3,                            // optional: max parallel test uploads, default: 3
+         retries: 3,                                      // optional: upload retry attempts, default: 3
+         retryDelay: 500,                                 // optional: initial retry backoff ms, doubles each attempt, default: 500
       }],
     ],
   })
@@ -94,8 +97,8 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - Env vars: `DATABASE_URL` (required), `DATA_DIR` (default `./data`), `PORT` (default `3001`), `ADMIN_USERNAME` (default `admin`), `ADMIN_PASSWORD` (default `changeme123`), `JWT_SECRET` (required in production), `NODE_ENV` (`production` enables secure cookies), `ALLOWED_ORIGIN` (CORS allowed origin, default `http://localhost:5173`; prod compose requires explicit value)
 
 **DB schema** (`src/db/schema.ts`):
-- `runs` — `runId`, `project`, `branch`, `commitSha`, `startedAt`, `completedAt`, `status`, `reportUrl`
-- `tests` — `id`, `testId`, `runId` (FK), `title`, `titlePath`, `locationFile/Line/Col`, `status`, `durationMs`, `retry`
+- `runs` — `runId`, `project`, `branch`, `commitSha`, `tags`, `startedAt`, `completedAt`, `status`, `reportUrl`
+- `tests` — `id`, `testId`, `runId` (FK), `title`, `tags`, `titlePath`, `locationFile/Line/Col`, `status`, `durationMs`, `retry`
 - `test_errors` — `id`, `testPk` (FK), `position`, `message`, `stack`
 - `test_annotations` — `id`, `testPk` (FK), `position`, `type`, `description`
 - `test_attachments` — `id`, `testPk` (FK), `position`, `name`, `contentType`, `filename`
@@ -124,7 +127,7 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - `GET|POST /api/users` / `PATCH /api/users/me` / `PATCH|DELETE /api/users/:id` — user management (admin, except PATCH me = any authed user)
 - `GET|POST|DELETE /api/api-keys` — API key management (admin)
 - `GET /api/settings` / `PATCH /api/settings` — settings (any authed / admin)
-- `POST /api/runs` / `GET /api/runs` / `GET /api/runs/:runId` — run CRUD (any authed)
+- `POST /api/runs` / `GET /api/runs` / `GET /api/runs/meta` / `GET /api/runs/:runId` / `GET /api/runs/:runId/tests/:testId` — run read/write APIs (any authed)
 - `DELETE /api/runs/:runId` / `POST /api/runs/delete-batch` — run deletion (admin)
 - `POST /api/runs/:runId/tests` / `POST /api/runs/:runId/report` / `POST /api/runs/:runId/complete` — reporter upload (any authed; use `apiKey`)
 - `GET /api/events` — SSE stream of run lifecycle events (any authed)
@@ -133,12 +136,14 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 
 **`packages/e2e`** — End-to-end integration tests for the full stack
 - Serves a static `demo-app/` (a simple todo app) via `npx serve` on port 5500 as the test target
-- Uses `@playwright-cart/reporter` from the workspace (built by `pretest` before each run)
+- Uses workspace reporter package (built by `pretest` before each run)
 - Requires a running server + DB and optionally `API_KEY` env var; configure via `.env` in the package
-- `playwright.config.ts` uses `project: 'e2e-demo'` and posts results to `http://localhost:3001`
+- `playwright.config.ts` uses `project: 'e2e-demo'`, posts results to `http://localhost:3001`, and tags runs with `@demo` / `@e2e`
 
 **`packages/web`** — React 19 + Vite frontend
-- Lists uploaded reports with project name, upload time, and test status
+- Lists uploaded reports with project, branch, tags, status, and flaky counts
+- Filters runs by project, branch, status, and tags via `/api/runs/meta`
+- Provides account settings (username, password, theme, runs-per-page) and admin settings (users, API keys, retention)
 - Opens report in new tab (requires HTTP not HTTPS for service worker)
 - In dev: Vite proxies `/api` and `/reports` to server on port 3001
 - In production: Nginx serves static files and proxies to server
@@ -147,7 +152,7 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 
 - Server: port 3001, mounts shared volume at `/app/data`
 - Web: port 80 via Nginx, proxies to server container
-- `docker-compose up` starts the full stack
+- `docker compose up` starts the full stack
 
 ### TypeScript config
 

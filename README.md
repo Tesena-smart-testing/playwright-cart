@@ -10,7 +10,7 @@ It has three parts: a **reporter** npm package you add to your Playwright config
 
 ## Quick Start
 
-**Prerequisites:** Docker + Docker Compose
+**Prerequisites:** Docker + Compose plugin
 
 ```bash
 git clone https://github.com/radekBednarik/playwright-cart.git
@@ -90,6 +90,7 @@ export default defineConfig({
       project: 'my-app',                               // logical project name shown in the dashboard (required)
       branch: process.env.BRANCH,                      // git branch name (optional)
       commitSha: process.env.COMMIT_SHA,               // git commit SHA (optional)
+      tags: ['@smoke', '@checkout'],                   // tags shown in UI and filterable later (optional)
       apiKey: process.env.PLAYWRIGHT_CART_API_KEY,     // Bearer token for auth (optional)
       uploadConcurrency: 3,                            // max parallel test uploads, default: 3 (optional)
       retries: 3,                                      // upload retry attempts per test, default: 3 (optional)
@@ -99,7 +100,7 @@ export default defineConfig({
 })
 ```
 
-The reporter streams test results to the server during the run and uploads the zipped Playwright HTML report on completion.
+The reporter streams test results to the server during the run and uploads the zipped Playwright HTML report on completion. Run-level tags from reporter config and test-level tags from Playwright are stored and exposed in the dashboard filters.
 
 ---
 
@@ -113,7 +114,7 @@ On first startup the server creates an admin account from the `ADMIN_USERNAME` a
 
 | Role | Capabilities |
 |------|-------------|
-| `admin` | Manage users, create/revoke API keys, configure settings, view all runs |
+| `admin` | Manage users, create/revoke API keys, configure retention settings, view and delete all runs |
 | `user` | View all runs, update own username/password/theme/runs-per-page setting |
 
 ### API keys for CI/CD
@@ -222,13 +223,16 @@ pnpm --filter @radekbednarik/playwright-cart-reporter test:watch
 
 pnpm --filter @playwright-cart/server test
 pnpm --filter @playwright-cart/server test:watch
+
+pnpm --filter @playwright-cart/web test
+pnpm --filter @playwright-cart/web test:watch
 ```
 
 ### E2E testing
 
-A self-contained E2E suite lives in `packages/e2e`. It uses the reporter directly from the monorepo (no npm publish needed) and runs Playwright tests against a small static demo app, verifying the full reporter → server → dashboard pipeline.
+A self-contained E2E suite lives in `packages/e2e`. It uses the workspace reporter package directly (no npm publish needed) and runs Playwright tests against a small static demo app, verifying the full reporter → server → dashboard pipeline.
 
-**Prerequisites:** Docker + Docker Compose, Playwright browsers:
+**Prerequisites:** Docker + Compose plugin, Playwright browsers:
 
 ```bash
 pnpm --filter @playwright-cart/e2e exec playwright install chromium
@@ -245,7 +249,7 @@ docker compose ps   # wait until server and web show "healthy"
 pnpm --filter @playwright-cart/e2e test
 
 # 3. Open the dashboard
-open http://localhost
+# visit http://localhost in your browser
 ```
 
 Expect 4 passing tests and 1 intentional failure — the failing test verifies that the dashboard correctly displays error states and attached traces.
