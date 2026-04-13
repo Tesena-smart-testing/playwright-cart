@@ -129,6 +129,30 @@ describe('GET /api/runs', () => {
     expect(body.runs[0].runId).toBe('run-1')
     expect(body.total).toBe(1)
   })
+
+  it('filters runs by a single tag param', async () => {
+    await storage.createRun({
+      runId: 'run-1',
+      project: 'p',
+      tags: ['@demo', '@smoke'],
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'passed',
+    })
+    await storage.createRun({
+      runId: 'run-2',
+      project: 'p',
+      tags: ['@auth'],
+      startedAt: '2026-04-02T11:00:00.000Z',
+      status: 'passed',
+    })
+
+    const res = await runs.request('/?tag=%40demo')
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { runs: storage.RunRecord[]; total: number }
+    expect(body.runs).toHaveLength(1)
+    expect(body.runs[0].runId).toBe('run-1')
+    expect(body.total).toBe(1)
+  })
 })
 
 describe('GET /api/runs/meta', () => {

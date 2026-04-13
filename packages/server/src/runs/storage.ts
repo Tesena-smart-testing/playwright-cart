@@ -1,7 +1,7 @@
 import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { SQL } from 'drizzle-orm'
-import { and, count, desc, eq, gt, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, gt, inArray, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { runs, testAnnotations, testAttachments, testErrors, tests } from '../db/schema.js'
 
@@ -127,9 +127,7 @@ export async function listRuns(
   if (query.project) conditions.push(eq(runs.project, query.project))
   if (query.branch) conditions.push(eq(runs.branch, query.branch))
   if (query.status) conditions.push(eq(runs.status, query.status as RunRecord['status']))
-  if (query.tags && query.tags.length > 0) {
-    conditions.push(sql`${runs.tags} @> ${query.tags}::text[]`)
-  }
+  if (query.tags && query.tags.length > 0) conditions.push(arrayContains(runs.tags, query.tags))
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   const [agg] = await db

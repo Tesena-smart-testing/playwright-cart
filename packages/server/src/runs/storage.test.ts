@@ -173,6 +173,32 @@ describe('listRuns', () => {
     expect(result.runs[0].runId).toBe('r1')
   })
 
+  it('filters by a single tag', async () => {
+    await storage.createRun({
+      runId: 'r1',
+      project: 'p',
+      tags: ['@demo', '@smoke'],
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'passed',
+    })
+    await storage.createRun({
+      runId: 'r2',
+      project: 'p',
+      tags: ['@auth'],
+      startedAt: '2026-04-02T11:00:00.000Z',
+      status: 'passed',
+    })
+
+    const result = await storage.listRuns({
+      page: 1,
+      pageSize: 10,
+      tags: ['@demo'],
+    })
+
+    expect(result.runs).toHaveLength(1)
+    expect(result.runs[0].runId).toBe('r1')
+  })
+
   it('returns aggregate stats scoped to the active filter', async () => {
     await storage.createRun({
       runId: 'r1',
