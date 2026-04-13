@@ -4,7 +4,8 @@ import RunStats from '../components/RunStats.js'
 import SuiteGroup, { type SuiteTreeNode } from '../components/SuiteGroup.js'
 import TagFilter from '../components/TagFilter.js'
 import { useRun } from '../hooks/useRun.js'
-import type { AnnotatedRunWithTests, AnnotatedTestRecord, TestRecord } from '../lib/api.js'
+import type { AnnotatedRunWithTests, AnnotatedTestRecord } from '../lib/api.js'
+import { annotateRetriedTests } from '../lib/retries.js'
 import { collectUniqueTags, matchesAllTags } from '../lib/tags.js'
 
 export default function RunDetailPage() {
@@ -92,32 +93,6 @@ export default function RunDetailPage() {
       )}
     </div>
   )
-}
-
-function annotateRetriedTests(tests: TestRecord[]): AnnotatedTestRecord[] {
-  const byIdentity = new Map<string, TestRecord[]>()
-  for (const test of tests) {
-    const key = test.titlePath.join('\0')
-    const group = byIdentity.get(key) ?? []
-    group.push(test)
-    byIdentity.set(key, group)
-  }
-
-  const retriedIds = new Set<string>()
-  for (const group of byIdentity.values()) {
-    if (group.length <= 1) continue
-    const maxRetry = Math.max(...group.map((t) => t.retry))
-    const finalAttempt = group.find((t) => t.retry === maxRetry)
-    if (finalAttempt?.status === 'passed') {
-      for (const t of group) {
-        if (t.retry < maxRetry && (t.status === 'failed' || t.status === 'timedOut')) {
-          retriedIds.add(t.testId)
-        }
-      }
-    }
-  }
-
-  return tests.map((t) => (retriedIds.has(t.testId) ? { ...t, retried: true } : t))
 }
 
 function buildSuiteTree(tests: AnnotatedTestRecord[]): Map<string, SuiteTreeNode> {
