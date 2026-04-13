@@ -14,6 +14,7 @@ export interface RunRecord {
   project: string
   branch?: string
   commitSha?: string
+  tags: string[]
   startedAt: string
   completedAt?: string
   status: 'running' | 'passed' | 'failed' | 'interrupted' | 'timedOut'
@@ -24,6 +25,7 @@ export interface RunRecord {
 export interface TestRecord {
   testId: string
   title: string
+  tags: string[]
   titlePath: string[]
   location: { file: string; line: number; column: number }
   status: 'passed' | 'failed' | 'timedOut' | 'skipped' | 'interrupted'
@@ -42,6 +44,7 @@ function toRunRecord(row: typeof runs.$inferSelect): RunRecord {
     project: row.project,
     ...(row.branch != null && { branch: row.branch }),
     ...(row.commitSha != null && { commitSha: row.commitSha }),
+    tags: row.tags as string[],
     startedAt: row.startedAt.toISOString(),
     ...(row.completedAt != null && { completedAt: row.completedAt.toISOString() }),
     status: row.status,
@@ -58,6 +61,7 @@ function assembleTestRecord(
   return {
     testId: row.testId,
     title: row.title,
+    tags: row.tags as string[],
     titlePath: row.titlePath as string[],
     location: { file: row.locationFile, line: row.locationLine, column: row.locationCol },
     status: row.status,
@@ -87,6 +91,7 @@ export async function createRun(run: RunRecord): Promise<void> {
     project: run.project,
     branch: run.branch,
     commitSha: run.commitSha,
+    tags: run.tags,
     startedAt: new Date(run.startedAt),
     status: run.status,
   })
@@ -112,6 +117,7 @@ export type RunsQuery = {
   project?: string
   branch?: string
   status?: string
+  tags?: string[]
 }
 
 export async function listRuns(
@@ -121,6 +127,9 @@ export async function listRuns(
   if (query.project) conditions.push(eq(runs.project, query.project))
   if (query.branch) conditions.push(eq(runs.branch, query.branch))
   if (query.status) conditions.push(eq(runs.status, query.status as RunRecord['status']))
+  if (query.tags && query.tags.length > 0) {
+    conditions.push(sql`${runs.tags} @> ${query.tags}::text[]`)
+  }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined
 
   const [agg] = await db
@@ -169,6 +178,7 @@ export async function writeTestResult(runId: string, test: TestRecord): Promise<
         testId: test.testId,
         runId,
         title: test.title,
+        tags: test.tags,
         titlePath: test.titlePath,
         locationFile: test.location.file,
         locationLine: test.location.line,

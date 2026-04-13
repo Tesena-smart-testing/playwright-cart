@@ -9,7 +9,7 @@ import type {
   TestResult,
 } from '@playwright/test/reporter'
 import stripAnsi from 'strip-ansi'
-import { buildTestId, Semaphore, uploadWithRetry, zipDirectory } from './upload.js'
+import { buildTestId, normalizeTags, Semaphore, uploadWithRetry, zipDirectory } from './upload.js'
 
 export interface PlaywrightCartReporterOptions {
   /** Base URL of the playwright-cart server, e.g. http://localhost:3001 */
@@ -20,6 +20,8 @@ export interface PlaywrightCartReporterOptions {
   branch?: string
   /** Git commit SHA */
   commitSha?: string
+  /** Tags shown on run row and used for run filtering */
+  tags?: string[]
   /** Max parallel test uploads (default: 3) */
   uploadConcurrency?: number
   /** Upload retry attempts (default: 3) */
@@ -35,6 +37,7 @@ export class PlaywrightCartReporter implements Reporter {
   private readonly project: string
   private readonly branch: string | undefined
   private readonly commitSha: string | undefined
+  private readonly tags: string[]
   private readonly retries: number
   private readonly retryDelay: number
   private readonly apiKey: string | undefined
@@ -50,6 +53,7 @@ export class PlaywrightCartReporter implements Reporter {
     this.project = options.project
     this.branch = options.branch
     this.commitSha = options.commitSha
+    this.tags = normalizeTags(options.tags)
     this.retries = options.retries ?? 3
     this.retryDelay = options.retryDelay ?? 500
     this.apiKey = options.apiKey
@@ -77,6 +81,7 @@ export class PlaywrightCartReporter implements Reporter {
         project: this.project,
         branch: this.branch,
         commitSha: this.commitSha,
+        tags: this.tags,
         startedAt: new Date().toISOString(),
       }),
     })
@@ -112,6 +117,7 @@ export class PlaywrightCartReporter implements Reporter {
           stack: e.stack ? stripAnsi(e.stack) : undefined,
         })),
         retry: result.retry,
+        tags: normalizeTags(test.tags),
         annotations: test.annotations,
         attachments: attachmentMeta,
       }

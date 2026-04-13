@@ -1,12 +1,15 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import RunHeader from '../components/RunHeader.js'
 import RunStats from '../components/RunStats.js'
 import SuiteGroup, { type SuiteTreeNode } from '../components/SuiteGroup.js'
+import TagFilter from '../components/TagFilter.js'
 import { useRun } from '../hooks/useRun.js'
 import type { AnnotatedRunWithTests, AnnotatedTestRecord, TestRecord } from '../lib/api.js'
+import { collectUniqueTags, matchesAllTags } from '../lib/tags.js'
 
 export default function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
+  const [params, setParams] = useSearchParams()
   const { data: run, isLoading, error } = useRun(runId ?? '')
 
   if (isLoading) return <Skeleton />
@@ -30,7 +33,19 @@ export default function RunDetailPage() {
   if (!run) return null
 
   const annotatedRun: AnnotatedRunWithTests = { ...run, tests: annotateRetriedTests(run.tests) }
-  const suites = buildSuiteTree(annotatedRun.tests)
+  const selectedTags = params.getAll('tag').sort()
+  const filteredTests = annotatedRun.tests.filter((test) => matchesAllTags(test.tags, selectedTags))
+  const suites = buildSuiteTree(filteredTests)
+  const availableTags = collectUniqueTags(annotatedRun.tests.map((test) => test.tags))
+
+  function setSelectedTags(tags: string[]) {
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('tag')
+      for (const tag of tags) next.append('tag', tag)
+      return next
+    })
+  }
 
   return (
     <div>
@@ -46,16 +61,32 @@ export default function RunDetailPage() {
       {/* Run card with progress bar */}
       <RunHeader run={annotatedRun} />
       <RunStats tests={annotatedRun.tests} />
+      <div className="mb-6">
+        <TagFilter
+          tags={availableTags}
+          selectedTags={selectedTags}
+          label="Suite and test tags"
+          onChange={setSelectedTags}
+        />
+      </div>
 
       {/* Suite tree */}
-      {annotatedRun.tests.length === 0 ? (
+      {filteredTests.length === 0 ? (
         <p className="py-8 text-center font-mono text-sm text-tn-muted">
-          No test results uploaded yet.
+          {annotatedRun.tests.length === 0
+            ? 'No test results uploaded yet.'
+            : 'No suites or tests match current tag filters.'}
         </p>
       ) : (
         <div className="space-y-3">
           {[...suites.entries()].map(([name, node]) => (
-            <SuiteGroup key={name} runId={run.runId} name={name} node={node} />
+            <SuiteGroup
+              key={name}
+              runId={run.runId}
+              name={name}
+              node={node}
+              selectedTags={selectedTags}
+            />
           ))}
         </div>
       )}

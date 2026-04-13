@@ -33,6 +33,7 @@ describe('createRun / getRun', () => {
     const run: storage.RunRecord = {
       runId: 'my-project-123',
       project: 'my-project',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     }
@@ -50,6 +51,7 @@ describe('updateRun', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -71,12 +73,14 @@ describe('listRuns', () => {
     await storage.createRun({
       runId: 'a',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T09:00:00.000Z',
       status: 'running',
     })
     await storage.createRun({
       runId: 'b',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -90,6 +94,7 @@ describe('listRuns', () => {
       await storage.createRun({
         runId: `run-${i}`,
         project: 'p',
+        tags: [],
         startedAt: new Date(Date.now() + i * 1000).toISOString(),
         status: 'passed',
       })
@@ -105,12 +110,14 @@ describe('listRuns', () => {
     await storage.createRun({
       runId: 'r1',
       project: 'alpha',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'passed',
     })
     await storage.createRun({
       runId: 'r2',
       project: 'beta',
+      tags: [],
       startedAt: '2026-04-02T11:00:00.000Z',
       status: 'failed',
     })
@@ -124,12 +131,14 @@ describe('listRuns', () => {
     await storage.createRun({
       runId: 'r1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'passed',
     })
     await storage.createRun({
       runId: 'r2',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T11:00:00.000Z',
       status: 'failed',
     })
@@ -138,22 +147,51 @@ describe('listRuns', () => {
     expect(result.runs[0].runId).toBe('r2')
   })
 
+  it('filters by tags with AND semantics', async () => {
+    await storage.createRun({
+      runId: 'r1',
+      project: 'p',
+      tags: ['@auth', '@smoke'],
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'passed',
+    })
+    await storage.createRun({
+      runId: 'r2',
+      project: 'p',
+      tags: ['@auth'],
+      startedAt: '2026-04-02T11:00:00.000Z',
+      status: 'passed',
+    })
+
+    const result = await storage.listRuns({
+      page: 1,
+      pageSize: 10,
+      tags: ['@auth', '@smoke'],
+    })
+
+    expect(result.runs).toHaveLength(1)
+    expect(result.runs[0].runId).toBe('r1')
+  })
+
   it('returns aggregate stats scoped to the active filter', async () => {
     await storage.createRun({
       runId: 'r1',
       project: 'alpha',
+      tags: [],
       startedAt: '2026-04-02T09:00:00.000Z',
       status: 'passed',
     })
     await storage.createRun({
       runId: 'r2',
       project: 'alpha',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'failed',
     })
     await storage.createRun({
       runId: 'r3',
       project: 'beta',
+      tags: [],
       startedAt: '2026-04-02T11:00:00.000Z',
       status: 'passed',
     })
@@ -169,6 +207,7 @@ describe('listRuns — flakyCount', () => {
     await storage.createRun({
       runId,
       project: 'p',
+      tags: [],
       startedAt: new Date().toISOString(),
       status: 'passed',
     })
@@ -183,6 +222,7 @@ describe('listRuns — flakyCount', () => {
     await storage.writeTestResult(runId, {
       testId,
       title: testId,
+      tags: [],
       titlePath: [testId],
       location: { file: 'test.spec.ts', line: 1, column: 1 },
       status,
@@ -244,12 +284,14 @@ describe('writeTestResult / getTestResults', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const test: storage.TestRecord = {
       testId: 'suite--my-test',
       title: 'my test',
+      tags: ['@smoke'],
       titlePath: ['suite', 'my test'],
       location: { file: 'test.spec.ts', line: 10, column: 1 },
       status: 'passed',
@@ -267,12 +309,14 @@ describe('writeTestResult / getTestResults', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const test: storage.TestRecord = {
       testId: 'failing-test',
       title: 'failing test',
+      tags: ['@bug', '@slow'],
       titlePath: ['suite', 'failing test'],
       location: { file: 'test.spec.ts', line: 20, column: 1 },
       status: 'failed',
@@ -294,6 +338,7 @@ describe('getTestResult', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -304,12 +349,14 @@ describe('getTestResult', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const test: storage.TestRecord = {
       testId: 'my-test',
       title: 'my test',
+      tags: [],
       titlePath: ['my test'],
       location: { file: 'a.spec.ts', line: 1, column: 1 },
       status: 'passed',

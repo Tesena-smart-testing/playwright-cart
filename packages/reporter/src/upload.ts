@@ -8,6 +8,12 @@ export function buildTestId(titlePath: string[], retry: number): string {
   return retry > 0 ? `${slug}-retry${retry}` : slug
 }
 
+export function normalizeTags(tags: string[] | undefined): string[] {
+  if (!tags || tags.length === 0) return []
+
+  return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0))].sort()
+}
+
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 export async function uploadWithRetry(

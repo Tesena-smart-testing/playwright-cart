@@ -35,13 +35,21 @@ export default function RunsPage() {
   const project = params.get('project') || undefined
   const branch = params.get('branch') || undefined
   const status = params.get('status') || undefined
+  const tags = params.getAll('tag').sort()
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: derived from params — reactive via URLSearchParams
   useEffect(() => {
     setPage(1)
-  }, [project, branch, status])
+  }, [project, branch, status, tags.join('\0')])
 
-  const { data, isLoading, error, refetch } = useRuns({ page, pageSize, project, branch, status })
+  const { data, isLoading, error, refetch } = useRuns({
+    page,
+    pageSize,
+    project,
+    branch,
+    status,
+    tags,
+  })
 
   async function handlePageSizeChange(size: PageSize) {
     setPageSize(size)
@@ -72,7 +80,9 @@ export default function RunsPage() {
     )
   }
 
-  if (!data || (data.total === 0 && !project && !branch && !status)) return <EmptyState />
+  if (!data || (data.total === 0 && !project && !branch && !status && tags.length === 0)) {
+    return <EmptyState />
+  }
 
   const totalPages = Math.max(1, Math.ceil(data.total / pageSize))
 
@@ -103,7 +113,11 @@ export default function RunsPage() {
             ))}
           </div>
           <span className="text-tn-border select-none">|</span>
-          <FilterBar projects={meta?.projects ?? []} branches={meta?.branches ?? []} />
+          <FilterBar
+            projects={meta?.projects ?? []}
+            branches={meta?.branches ?? []}
+            tags={meta?.tags ?? []}
+          />
         </div>
       </div>
 

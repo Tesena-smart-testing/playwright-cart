@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildTestId, Semaphore, uploadWithRetry } from './upload.js'
+import { buildTestId, normalizeTags, Semaphore, uploadWithRetry } from './upload.js'
 
 describe('buildTestId', () => {
   it('joins titlePath with -- and slugifies', () => {
@@ -12,6 +12,16 @@ describe('buildTestId', () => {
 
   it('does not append retry suffix when retry is 0', () => {
     expect(buildTestId(['My Test'], 0)).toBe('my-test')
+  })
+})
+
+describe('normalizeTags', () => {
+  it('returns empty array for missing tags', () => {
+    expect(normalizeTags(undefined)).toEqual([])
+  })
+
+  it('trims, deduplicates, and sorts tags', () => {
+    expect(normalizeTags([' @slow ', '@smoke', '@slow', ''])).toEqual(['@slow', '@smoke'])
   })
 })
 

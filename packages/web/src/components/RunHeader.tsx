@@ -1,5 +1,6 @@
 import type { AnnotatedRunWithTests, AnnotatedTestRecord } from '../lib/api.js'
 import StatusBadge from './StatusBadge.js'
+import TagChip from './TagChip.js'
 
 interface Props {
   run: AnnotatedRunWithTests
@@ -24,6 +25,13 @@ export default function RunHeader({ run }: Props) {
             )}
             <span>{new Date(run.startedAt).toLocaleString()}</span>
           </div>
+          {run.tags.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {run.tags.map((tag) => (
+                <TagChip key={tag} tag={tag} />
+              ))}
+            </div>
+          )}
         </div>
         {run.reportUrl && (
           <a

@@ -18,6 +18,7 @@ export interface RunRecord {
   project: string
   branch?: string
   commitSha?: string
+  tags: string[]
   startedAt: string
   completedAt?: string
   status: RunStatus
@@ -28,6 +29,7 @@ export interface RunRecord {
 export interface TestRecord {
   testId: string
   title: string
+  tags: string[]
   titlePath: string[]
   location: { file: string; line: number; column: number }
   status: TestStatus
@@ -107,6 +109,7 @@ export interface RunsParams {
   project?: string
   branch?: string
   status?: string
+  tags?: string[]
 }
 
 export async function fetchRuns(params: RunsParams): Promise<PaginatedRuns> {
@@ -116,6 +119,7 @@ export async function fetchRuns(params: RunsParams): Promise<PaginatedRuns> {
   if (params.project) query.set('project', params.project)
   if (params.branch) query.set('branch', params.branch)
   if (params.status) query.set('status', params.status)
+  for (const tag of params.tags ?? []) query.append('tag', tag)
   const res = await fetch(`/api/runs?${query}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json() as Promise<PaginatedRuns>
@@ -124,6 +128,7 @@ export async function fetchRuns(params: RunsParams): Promise<PaginatedRuns> {
 export interface RunsMeta {
   projects: string[]
   branches: string[]
+  tags: string[]
 }
 
 export async function fetchRunsMeta(): Promise<RunsMeta> {

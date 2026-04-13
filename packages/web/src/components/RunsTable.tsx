@@ -5,6 +5,7 @@ import { deleteRun, deleteRunsBatch } from '../lib/api.js'
 import { formatExpiry, formatRelativeTime } from '../lib/format.js'
 import ExpiryChip from './ExpiryChip.js'
 import StatusBadge from './StatusBadge.js'
+import TagChip from './TagChip.js'
 
 interface Props {
   runs: RunRecord[]
@@ -127,6 +128,13 @@ export default function RunsTable({ runs, isAdmin, retentionDays, onDeleteSucces
                   <div className="font-display font-semibold text-tn-fg">{run.project}</div>
                   {run.branch && (
                     <div className="mt-0.5 font-mono text-xs text-tn-blue">{run.branch}</div>
+                  )}
+                  {run.tags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {run.tags.map((tag) => (
+                        <TagChip key={tag} tag={tag} small />
+                      ))}
+                    </div>
                   )}
                 </td>
                 <td className="px-4 py-3">

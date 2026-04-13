@@ -1,6 +1,7 @@
 import type { TestRecord } from '../lib/api.js'
 import { formatDuration } from '../lib/format.js'
 import StatusBadge from './StatusBadge.js'
+import TagChip from './TagChip.js'
 
 interface Props {
   test: TestRecord
@@ -27,6 +28,9 @@ export default function TestHeader({ test }: Props) {
             Retry #{test.retry}
           </span>
         )}
+        {test.tags.map((tag) => (
+          <TagChip key={tag} tag={tag} />
+        ))}
         <span className="font-mono text-xs text-tn-muted">
           {test.location.file}:{test.location.line}
         </span>

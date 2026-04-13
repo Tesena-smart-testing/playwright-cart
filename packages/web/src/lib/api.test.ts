@@ -16,6 +16,7 @@ describe('fetchRuns', () => {
         {
           runId: 'run-1',
           project: 'my-app',
+          tags: ['@smoke'],
           startedAt: '2026-04-02T10:00:00.000Z',
           status: 'passed',
         },
@@ -38,9 +39,17 @@ describe('fetchRuns', () => {
     const mockPage = { runs: [], total: 0, totalPassed: 0, totalFailed: 0, page: 1, pageSize: 25 }
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(mockPage), { status: 200 }))
 
-    await fetchRuns({ page: 1, pageSize: 25, project: 'my-app', status: 'failed' })
+    await fetchRuns({
+      page: 1,
+      pageSize: 25,
+      project: 'my-app',
+      status: 'failed',
+      tags: ['@auth', '@smoke'],
+    })
 
-    expect(fetch).toHaveBeenCalledWith('/api/runs?page=1&pageSize=25&project=my-app&status=failed')
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/runs?page=1&pageSize=25&project=my-app&status=failed&tag=%40auth&tag=%40smoke',
+    )
   })
 
   it('throws on non-ok response', async () => {
@@ -54,6 +63,7 @@ describe('fetchRun', () => {
     const mockRun = {
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'passed',
       tests: [],
@@ -74,7 +84,7 @@ describe('fetchRun', () => {
 
 describe('fetchTest', () => {
   it('fetches /api/runs/:runId/tests/:testId and returns test', async () => {
-    const mockTest = { testId: 'test-1', title: 'my test' }
+    const mockTest = { testId: 'test-1', title: 'my test', tags: [] }
     vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(mockTest), { status: 200 }))
 
     const result = await fetchTest('run-1', 'test-1')

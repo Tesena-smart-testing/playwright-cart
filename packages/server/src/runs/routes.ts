@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import AdmZip from 'adm-zip'
+import { sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { adminMiddleware } from '../auth/middleware.js'
 import type { HonoEnv } from '../auth/types.js'
@@ -13,11 +14,18 @@ export const runs = new Hono<HonoEnv>()
 
 const SAFE_ID = /^[a-z0-9_\-.]+$/i
 
+function normalizeTags(tags: string[] | undefined): string[] {
+  if (!tags || tags.length === 0) return []
+
+  return [...new Set(tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0))].sort()
+}
+
 runs.post('/', async (c) => {
   const body = await c.req.json<{
     project: string
     branch?: string
     commitSha?: string
+    tags?: string[]
     startedAt: string
   }>()
   const slug = body.project.replace(/[^a-z0-9]/gi, '-').toLowerCase()
@@ -27,6 +35,7 @@ runs.post('/', async (c) => {
     project: body.project,
     branch: body.branch,
     commitSha: body.commitSha,
+    tags: normalizeTags(body.tags),
     startedAt: body.startedAt,
     status: 'running',
   }
@@ -44,19 +53,27 @@ runs.get('/', async (c) => {
   const project = c.req.query('project') || undefined
   const branch = c.req.query('branch') || undefined
   const status = c.req.query('status') || undefined
-  const result = await storage.listRuns({ page, pageSize, project, branch, status })
+  const tags = normalizeTags(c.req.queries('tag'))
+  const result = await storage.listRuns({ page, pageSize, project, branch, status, tags })
   return c.json({ ...result, page, pageSize })
 })
 
 runs.get('/meta', async (c) => {
   const projectRows = await db.selectDistinct({ project: runsSchema.project }).from(runsSchema)
   const branchRows = await db.selectDistinct({ branch: runsSchema.branch }).from(runsSchema)
+  const tagRows = await db.execute<{ tag: string }>(sql`
+    SELECT DISTINCT unnest(${runsSchema.tags}) AS tag
+    FROM ${runsSchema}
+    WHERE cardinality(${runsSchema.tags}) > 0
+    ORDER BY tag ASC
+  `)
   return c.json({
     projects: projectRows.map((r) => r.project).sort(),
     branches: branchRows
       .filter((r): r is { branch: string } => r.branch != null)
       .map((r) => r.branch)
       .sort(),
+    tags: tagRows.rows.map((row) => row.tag),
   })
 })
 
@@ -92,7 +109,7 @@ runs.post('/:runId/tests', async (c) => {
   const runId = c.req.param('runId')
   if (!SAFE_ID.test(runId)) return c.json({ error: 'Invalid runId' }, 400)
   const body = await c.req.parseBody()
-  const metadata = JSON.parse(body.metadata as string) as storage.TestRecord
+  const metadata = JSON.parse(body.metadata as string) as storage.TestRecord & { tags?: string[] }
   if (!SAFE_ID.test(metadata.testId)) return c.json({ error: 'Invalid testId' }, 400)
   const attachmentsDir = storage.getAttachmentsDir(runId, metadata.testId)
 
@@ -105,7 +122,7 @@ runs.post('/:runId/tests', async (c) => {
     }
   }
 
-  await storage.writeTestResult(runId, metadata)
+  await storage.writeTestResult(runId, { ...metadata, tags: normalizeTags(metadata.tags) })
   runEmitter.emit('event', { type: 'run:updated', runId } satisfies RunEvent)
   return c.json({ testId: metadata.testId }, 201)
 })

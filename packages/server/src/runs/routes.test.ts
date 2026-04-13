@@ -35,7 +35,7 @@ describe('POST /api/runs', () => {
     const res = await runs.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project: 'my-app', startedAt: '2026-04-02T10:00:00.000Z' }),
+      body: JSON.stringify({ project: 'my-app', tags: [], startedAt: '2026-04-02T10:00:00.000Z' }),
     })
     expect(res.status).toBe(201)
     const { runId } = (await res.json()) as { runId: string }
@@ -49,6 +49,7 @@ describe('POST /api/runs', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         project: 'proj',
+        tags: ['@release', '@smoke'],
         startedAt: '2026-04-02T10:00:00.000Z',
         branch: 'main',
         commitSha: 'abc123',
@@ -58,6 +59,7 @@ describe('POST /api/runs', () => {
     const run = await storage.getRun(runId)
     expect(run?.branch).toBe('main')
     expect(run?.commitSha).toBe('abc123')
+    expect(run?.tags).toEqual(['@release', '@smoke'])
   })
 
   it('emits run:created with the new runId', async () => {
@@ -65,7 +67,7 @@ describe('POST /api/runs', () => {
     await runs.request('/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ project: 'my-app', startedAt: '2026-04-04T10:00:00.000Z' }),
+      body: JSON.stringify({ project: 'my-app', tags: [], startedAt: '2026-04-04T10:00:00.000Z' }),
     })
     expect(spy).toHaveBeenCalledWith('event', expect.objectContaining({ type: 'run:created' }))
     spy.mockRestore()
@@ -94,10 +96,34 @@ describe('GET /api/runs', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const res = await runs.request('/')
+    const body = (await res.json()) as { runs: storage.RunRecord[]; total: number }
+    expect(body.runs).toHaveLength(1)
+    expect(body.runs[0].runId).toBe('run-1')
+    expect(body.total).toBe(1)
+  })
+
+  it('filters runs by repeated tag params with AND semantics', async () => {
+    await storage.createRun({
+      runId: 'run-1',
+      project: 'p',
+      tags: ['@auth', '@smoke'],
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'passed',
+    })
+    await storage.createRun({
+      runId: 'run-2',
+      project: 'p',
+      tags: ['@auth'],
+      startedAt: '2026-04-02T11:00:00.000Z',
+      status: 'passed',
+    })
+
+    const res = await runs.request('/?tag=%40auth&tag=%40smoke')
     const body = (await res.json()) as { runs: storage.RunRecord[]; total: number }
     expect(body.runs).toHaveLength(1)
     expect(body.runs[0].runId).toBe('run-1')
@@ -118,18 +144,21 @@ describe('GET /api/runs/meta', () => {
     await storage.createRun({
       runId: 'r1',
       project: 'beta',
+      tags: ['@slow'],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'passed',
     })
     await storage.createRun({
       runId: 'r2',
       project: 'alpha',
+      tags: ['@smoke'],
       startedAt: '2026-04-02T11:00:00.000Z',
       status: 'passed',
     })
     await storage.createRun({
       runId: 'r3',
       project: 'alpha',
+      tags: [],
       startedAt: '2026-04-02T12:00:00.000Z',
       status: 'failed',
     })
@@ -142,6 +171,7 @@ describe('GET /api/runs/meta', () => {
     await storage.createRun({
       runId: 'r1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'passed',
       branch: 'main',
@@ -149,6 +179,7 @@ describe('GET /api/runs/meta', () => {
     await storage.createRun({
       runId: 'r2',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T11:00:00.000Z',
       status: 'passed',
       branch: 'feature/foo',
@@ -156,12 +187,14 @@ describe('GET /api/runs/meta', () => {
     await storage.createRun({
       runId: 'r3',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T12:00:00.000Z',
       status: 'passed',
     }) // no branch
     await storage.createRun({
       runId: 'r4',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T13:00:00.000Z',
       status: 'passed',
       branch: 'main',
@@ -169,6 +202,27 @@ describe('GET /api/runs/meta', () => {
     const res = await runs.request('/meta')
     const body = (await res.json()) as { projects: string[]; branches: string[] }
     expect(body.branches).toEqual(['feature/foo', 'main'])
+  })
+
+  it('returns distinct sorted tags', async () => {
+    await storage.createRun({
+      runId: 'r1',
+      project: 'p',
+      tags: ['@slow', '@smoke'],
+      startedAt: '2026-04-02T10:00:00.000Z',
+      status: 'passed',
+    })
+    await storage.createRun({
+      runId: 'r2',
+      project: 'p',
+      tags: ['@auth', '@smoke'],
+      startedAt: '2026-04-02T11:00:00.000Z',
+      status: 'passed',
+    })
+
+    const res = await runs.request('/meta')
+    const body = (await res.json()) as { projects: string[]; branches: string[]; tags: string[] }
+    expect(body.tags).toEqual(['@auth', '@slow', '@smoke'])
   })
 })
 
@@ -182,12 +236,14 @@ describe('GET /api/runs/:runId', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     await storage.writeTestResult('run-1', {
       testId: 'my-test',
       title: 'my test',
+      tags: ['@auth'],
       titlePath: ['my test'],
       location: { file: 'a.spec.ts', line: 1, column: 1 },
       status: 'passed',
@@ -202,6 +258,7 @@ describe('GET /api/runs/:runId', () => {
     const body = (await res.json()) as storage.RunRecord & { tests: storage.TestRecord[] }
     expect(body.runId).toBe('run-1')
     expect(body.tests).toHaveLength(1)
+    expect(body.tests[0].tags).toEqual(['@auth'])
   })
 })
 
@@ -210,12 +267,14 @@ describe('POST /api/runs/:runId/tests', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const metadata: storage.TestRecord = {
       testId: 'suite--my-test',
       title: 'my test',
+      tags: ['@auth', '@smoke'],
       titlePath: ['suite', 'my test'],
       location: { file: 'a.spec.ts', line: 5, column: 1 },
       status: 'passed',
@@ -232,18 +291,21 @@ describe('POST /api/runs/:runId/tests', () => {
     const results = await storage.getTestResults('run-1')
     expect(results).toHaveLength(1)
     expect(results[0].testId).toBe('suite--my-test')
+    expect(results[0].tags).toEqual(['@auth', '@smoke'])
   })
 
   it('saves attachment files to disk', async () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const metadata: storage.TestRecord = {
       testId: 'test-with-attach',
       title: 'test',
+      tags: [],
       titlePath: ['test'],
       location: { file: 'a.spec.ts', line: 1, column: 1 },
       status: 'failed',
@@ -271,6 +333,7 @@ describe('POST /api/runs/:runId/tests', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-04T10:00:00.000Z',
       status: 'running',
     })
@@ -278,6 +341,7 @@ describe('POST /api/runs/:runId/tests', () => {
     const metadata: storage.TestRecord = {
       testId: 'suite--my-test',
       title: 'my test',
+      tags: [],
       titlePath: ['suite', 'my test'],
       location: { file: 'a.spec.ts', line: 5, column: 1 },
       status: 'passed',
@@ -301,6 +365,7 @@ describe('POST /api/runs/:runId/report', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -332,6 +397,7 @@ describe('POST /api/runs/:runId/report', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-04T10:00:00.000Z',
       status: 'running',
     })
@@ -355,6 +421,7 @@ describe('POST /api/runs/:runId/complete', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -373,6 +440,7 @@ describe('POST /api/runs/:runId/complete', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-04T10:00:00.000Z',
       status: 'running',
     })
@@ -397,6 +465,7 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
@@ -408,12 +477,14 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
     await storage.createRun({
       runId: 'run-1',
       project: 'p',
+      tags: [],
       startedAt: '2026-04-02T10:00:00.000Z',
       status: 'running',
     })
     const test: storage.TestRecord = {
       testId: 'my-test',
       title: 'my test',
+      tags: ['@smoke'],
       titlePath: ['suite', 'my test'],
       location: { file: 'a.spec.ts', line: 1, column: 1 },
       status: 'passed',
@@ -429,5 +500,6 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
     const body = (await res.json()) as storage.TestRecord
     expect(body.testId).toBe('my-test')
     expect(body.title).toBe('my test')
+    expect(body.tags).toEqual(['@smoke'])
   })
 })

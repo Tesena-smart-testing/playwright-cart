@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   bigint,
   bigserial,
@@ -38,6 +39,7 @@ export const runs = pgTable(
     project: text('project').notNull(),
     branch: text('branch'),
     commitSha: text('commit_sha'),
+    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
     startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
     status: runStatusEnum('status').notNull().default('running'),
@@ -55,6 +57,7 @@ export const tests = pgTable(
       .notNull()
       .references(() => runs.runId, { onDelete: 'cascade' }),
     title: text('title').notNull(),
+    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
     titlePath: text('title_path').array().notNull(),
     locationFile: text('location_file').notNull(),
     locationLine: integer('location_line').notNull(),
