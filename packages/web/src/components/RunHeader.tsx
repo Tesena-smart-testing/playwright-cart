@@ -1,4 +1,4 @@
-import type { AnnotatedRunWithTests, AnnotatedTestRecord } from '../lib/api.js'
+import { type AnnotatedRunWithTests, type AnnotatedTestRecord, getTestOutcome } from '../lib/api.js'
 import ExternalLink from './ExternalLink.js'
 import StatusBadge from './StatusBadge.js'
 import TagChip from './TagChip.js'
@@ -55,14 +55,24 @@ function PassRateBar({ tests }: { tests: AnnotatedTestRecord[] }) {
 
   const finalTests = tests.filter((t) => !t.retried)
   const retriedTests = new Set(tests.filter((t) => t.retried).map(getTestIdentityKey))
-  const passed = finalTests.filter(
-    (t) => t.status === 'passed' && !retriedTests.has(getTestIdentityKey(t)),
-  ).length
-  const failed = finalTests.filter((t) => t.status === 'failed').length
+  const passed = finalTests.filter((t) => {
+    const outcome = getTestOutcome(t)
+    if (outcome === 'expected-failure') return true
+    if (outcome === 'unexpected-pass') return false
+    return t.status === 'passed' && !retriedTests.has(getTestIdentityKey(t))
+  }).length
+  const failed = finalTests.filter((t) => {
+    const outcome = getTestOutcome(t)
+    if (outcome === 'expected-failure') return false
+    if (outcome === 'unexpected-pass') return true
+    return t.status === 'failed'
+  }).length
   const timedOut = finalTests.filter((t) => t.status === 'timedOut').length
-  const flaky = finalTests.filter(
-    (t) => t.status === 'passed' && retriedTests.has(getTestIdentityKey(t)),
-  ).length
+  const flaky = finalTests.filter((t) => {
+    const outcome = getTestOutcome(t)
+    if (outcome !== 'normal') return false
+    return t.status === 'passed' && retriedTests.has(getTestIdentityKey(t))
+  }).length
   const skipped = finalTests.filter((t) => t.status === 'skipped').length
   const total = finalTests.length
 

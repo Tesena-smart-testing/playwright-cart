@@ -42,6 +42,16 @@ export interface TestRecord {
 
 export type AnnotatedTestRecord = TestRecord & { retried?: boolean }
 
+export type TestOutcome = 'expected-failure' | 'unexpected-pass' | 'normal'
+
+export function getTestOutcome(test: Pick<TestRecord, 'status' | 'annotations'>): TestOutcome {
+  const hasFailAnnotation = test.annotations.some((a) => a.type === 'fail')
+  if (!hasFailAnnotation) return 'normal'
+  if (test.status === 'failed') return 'expected-failure'
+  if (test.status === 'passed') return 'unexpected-pass'
+  return 'normal'
+}
+
 export type RunWithTests = RunRecord & { tests: TestRecord[] }
 export type AnnotatedRunWithTests = RunRecord & { tests: AnnotatedTestRecord[] }
 

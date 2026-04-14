@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { AnnotatedTestRecord, TestStatus } from '../lib/api.js'
+import { type AnnotatedTestRecord, getTestOutcome, type TestStatus } from '../lib/api.js'
 import { formatDuration } from '../lib/format.js'
 import { collectUniqueTags, getVisibleTags } from '../lib/tags.js'
 import { getSuitePathKey } from '../pages/RunDetailPage.js'
@@ -91,7 +91,11 @@ export default function SuiteGroup({
                   to={`/runs/${runId}/tests/${test.testId}`}
                   className={`flex items-center gap-3 py-2.5 pr-4 transition-colors hover:bg-tn-highlight/40 ${getPadding(depth + 1)}`}
                 >
-                  <TestStatusIcon status={test.status} retried={test.retried} />
+                  <TestStatusIcon
+                    status={test.status}
+                    retried={test.retried}
+                    annotations={test.annotations}
+                  />
                   <div className="min-w-0 flex-1">
                     <span className="text-sm text-tn-fg">{test.title}</span>
                     {getVisibleTags(test.tags, selectedTags).length > 0 && (
@@ -147,7 +151,12 @@ function countTests(node: SuiteTreeNode): { total: number; failed: number; flaky
   const direct = node.tests.filter((t) => !t.retried)
   const result = {
     total: direct.length,
-    failed: direct.filter((t) => t.status === 'failed' || t.status === 'timedOut').length,
+    failed: direct.filter((t) => {
+      const outcome = getTestOutcome(t)
+      if (outcome === 'expected-failure') return false
+      if (outcome === 'unexpected-pass') return true
+      return t.status === 'failed' || t.status === 'timedOut'
+    }).length,
     flaky: node.tests.filter((t) => t.retried).length,
   }
   for (const child of node.children.values()) {
@@ -167,8 +176,23 @@ const STATUS_ICON: Record<TestStatus, { icon: string; className: string }> = {
   interrupted: { icon: '!', className: 'text-tn-muted' },
 }
 
-function TestStatusIcon({ status, retried }: { status: TestStatus; retried?: boolean }) {
+function TestStatusIcon({
+  status,
+  retried,
+  annotations,
+}: {
+  status: TestStatus
+  retried?: boolean
+  annotations: AnnotatedTestRecord['annotations']
+}) {
   if (retried) return <span className="font-mono text-sm leading-none text-tn-yellow">↻</span>
+  const outcome = getTestOutcome({ status, annotations })
+  if (outcome === 'expected-failure') {
+    return <span className="font-mono text-sm leading-none text-tn-green">✓</span>
+  }
+  if (outcome === 'unexpected-pass') {
+    return <span className="font-mono text-sm leading-none text-tn-red">✗</span>
+  }
   const { icon, className } = STATUS_ICON[status]
   return <span className={`font-mono text-sm leading-none ${className}`}>{icon}</span>
 }
