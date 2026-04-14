@@ -137,6 +137,28 @@ API keys are HMAC-SHA256-hashed with `JWT_SECRET` before storage and can be revo
 
 ---
 
+## Dashboard
+
+### Annotation-based status inversion (`type: fail`)
+
+The dashboard understands Playwright's [`test.fail()`](https://playwright.dev/docs/api/class-test#test-fail) annotation. When a test carries an annotation with `type: 'fail'`, the dashboard inverts its displayed status:
+
+| Raw status | Annotation | Displayed as | Label |
+|---|---|---|---|
+| `failed` | `type: 'fail'` | **passed** (green) | `expected failure` (purple pill) |
+| `passed` | `type: 'fail'` | **failed** (red) | `unexpected pass` (red pill) |
+
+This inversion is applied consistently across all views:
+
+- **Test detail page** — status badge and secondary label pill
+- **Suite tree** — icon next to each test row
+- **Suite header** — failure counter (`N failed`)
+- **Run header** — pass-rate bar and stat pills (`N passed` / `N failed`)
+
+The logic lives in `getTestOutcome()` (`packages/web/src/lib/api.ts`). No server-side changes are involved — the raw status is stored as Playwright reports it; the inversion is display-only.
+
+---
+
 ## Configuration
 
 Environment variables for the server. When using `docker compose up`, `DATABASE_URL` is set automatically. For local development without Docker, copy `.env.example` to `.env`:

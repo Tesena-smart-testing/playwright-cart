@@ -147,6 +147,7 @@ A monorepo for collecting and viewing Playwright test reports in a centralized d
 - Opens report in new tab (requires HTTP not HTTPS for service worker)
 - In dev: Vite proxies `/api` and `/reports` to server on port 3001
 - In production: Nginx serves static files and proxies to server
+- **Annotation-based status inversion:** `getTestOutcome()` (`src/lib/api.ts`) checks for `annotation.type === 'fail'` (Playwright's `test.fail()`); `failed` + annotation → displayed as passed ("expected failure" purple label); `passed` + annotation → displayed as failed ("unexpected pass" red label); inversion applied in `TestHeader`, `SuiteGroup` (icon + counter), and `RunHeader` (pass-rate bar + stat pills); raw status unchanged in DB
 
 ### Docker
 
