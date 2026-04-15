@@ -53,7 +53,7 @@ pnpm --filter @playwright-cart/e2e test:ui   # Playwright UI mode
 
 Publish reporter (triggered automatically on GitHub Release):
 ```bash
-# Manual publish — requires NODE_AUTH_TOKEN with write:packages scope
+# Manual publish — set NODE_AUTH_TOKEN to a GitHub PAT with write:packages; in Actions uses GITHUB_TOKEN automatically
 pnpm --filter @radekbednarik/playwright-cart-reporter build
 pnpm --filter @radekbednarik/playwright-cart-reporter publish --no-git-checks
 ```

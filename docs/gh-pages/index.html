@@ -1819,44 +1819,15 @@
       <section id="integration" aria-labelledby="integration-heading">
         <p class="section-eyebrow">[ integrate ]</p>
         <h2 id="integration-heading" class="section-title">
-          Enable reporting in your<br />project in 3 steps.
+          Enable reporting in your<br />project in 2 steps.
         </h2>
         <p class="section-sub">
-          Published on <strong>GitHub Packages</strong> — registry auth required
-          before install.
+          Published as a <strong>public package</strong> on GitHub Packages — install directly, no auth needed.
         </p>
 
         <div class="integration-steps">
           <div class="int-step">
-            <p class="int-step-label">// 01 — configure registry</p>
-            <div
-              class="code-block"
-              role="region"
-              aria-label=".npmrc configuration"
-            >
-              <div class="code-header">
-                <div class="code-dots" aria-hidden="true">
-                  <span class="dot-r"></span>
-                  <span class="dot-y"></span>
-                  <span class="dot-g"></span>
-                </div>
-                <span class="code-filename">.npmrc</span>
-                <button
-                  type="button"
-                  class="copy-btn"
-                  data-copy="@radekbednarik:registry=https://npm.pkg.github.com&#10;//npm.pkg.github.com:_authToken=${GITHUB_TOKEN}"
-                  aria-label="Copy .npmrc content"
-                >
-                  copy
-                </button>
-              </div>
-              <pre><code>@radekbednarik:registry=https://npm.pkg.github.com
-//npm.pkg.github.com:_authToken=${GITHUB_TOKEN}</code></pre>
-            </div>
-          </div>
-
-          <div class="int-step">
-            <p class="int-step-label">// 02 — install</p>
+            <p class="int-step-label">// 01 — install</p>
             <div class="install-strip">
               <span class="install-prompt" aria-hidden="true">$</span>
               <code>pnpm add @radekbednarik/playwright-cart-reporter</code>
@@ -1872,7 +1843,7 @@
           </div>
 
           <div class="int-step">
-            <p class="int-step-label">// 03 — configure reporter</p>
+            <p class="int-step-label">// 02 — configure reporter</p>
             <div
               class="code-block"
               role="region"

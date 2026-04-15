@@ -41,33 +41,17 @@ docker compose down -v    # stop containers and delete all data
 
 ## Reporter Setup
 
-The reporter is published to GitHub Packages under `@radekbednarik/playwright-cart-reporter`.
+The reporter is published as a **public** package to GitHub Packages under `@radekbednarik/playwright-cart-reporter` — no auth token required to install.
 
-### 1. Configure registry auth
+### 1. Install
 
-Create or update `.npmrc` in your **project root** (the project that runs Playwright tests, not this repo):
+Add the registry scope to `.npmrc` in your **project root** (the project that runs Playwright tests, not this repo):
 
 ```ini
 @radekbednarik:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-`GITHUB_TOKEN` must be a GitHub Personal Access Token (classic) with `read:packages` scope. Create one at **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**.
-
-This file is safe to commit — the token is read from the environment at install time, never hardcoded.
-
-In GitHub Actions, `${{ secrets.GITHUB_TOKEN }}` is available automatically:
-
-```yaml
-- name: Install dependencies
-  run: npm install
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-For local installs, set `GITHUB_TOKEN` in your shell before running `npm install` / `pnpm install`.
-
-### 2. Install
+Then install:
 
 ```bash
 npm install --save-dev @radekbednarik/playwright-cart-reporter
@@ -75,7 +59,7 @@ npm install --save-dev @radekbednarik/playwright-cart-reporter
 pnpm add -D @radekbednarik/playwright-cart-reporter
 ```
 
-### 3. Configure in `playwright.config.ts`
+### 2. Configure in `playwright.config.ts`
 
 Add the reporter alongside the HTML reporter:
 
