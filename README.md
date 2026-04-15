@@ -91,7 +91,7 @@ export default defineConfig({
       branch: process.env.BRANCH,                      // git branch name (optional)
       commitSha: process.env.COMMIT_SHA,               // git commit SHA (optional)
       tags: ['@smoke', '@checkout'],                   // tags shown in UI and filterable later (optional)
-      apiKey: process.env.PLAYWRIGHT_CART_API_KEY,     // Bearer token for auth (optional)
+      apiKey: process.env.PLAYWRIGHT_CART_API_KEY,     // Bearer token for auth (required)
       uploadConcurrency: 3,                            // max parallel test uploads, default: 3 (optional)
       retries: 3,                                      // upload retry attempts per test, default: 3 (optional)
       retryDelay: 500,                                 // initial retry backoff in ms, doubles each attempt, default: 500 (optional)
