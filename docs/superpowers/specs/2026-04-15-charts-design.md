@@ -57,6 +57,7 @@ All routes are protected (existing `ProtectedRoute` wrapper applies).
 - Each tile border highlights with its accent color on hover.
 - Click tile → navigate to `/charts/<id>`.
 - Tile F (Test Reliability) is different: shows "Search a test…" prompt, no sparkline. Click → `/charts/test-reliability`.
+- **Auto-refresh:** subscribes to the existing SSE stream (`GET /api/events` via `useServerEvents`). When a `run:complete` event arrives, invalidates the `runTimeline` React Query cache — all tiles refresh automatically.
 
 ### 4.2 Individual Chart Page — `/charts/<id>`
 
@@ -69,6 +70,7 @@ All routes are protected (existing `ProtectedRoute` wrapper applies).
   - Per-chart filter override: Branch dropdown (inherits global filter by default)
 - **Main chart**: Full-width Recharts bar or line chart.
 - **"← Back to all charts"** link at bottom.
+- **Auto-refresh:** same SSE subscription — `run:complete` event triggers `queryClient.invalidateQueries(['runTimeline', ...params])`, chart re-fetches silently in background.
 
 ### 4.3 Test Reliability Page — `/charts/test-reliability`
 
@@ -79,6 +81,7 @@ All routes are protected (existing `ProtectedRoute` wrapper applies).
   - **Controls**: Last 25 / 50 / All runs + Branch override.
   - **Dot timeline**: one dot per run (newest right). Green = passed, Red = failed, Yellow = flaky (passed after retry), Grey = skipped. Hover tooltip: run ID, date, branch.
   - **Duration sub-chart**: bar chart of duration per run, aligned to same X-axis as dot timeline.
+- **Auto-refresh:** SSE `run:complete` event invalidates `['testHistory', testId]` query — dot timeline gains a new dot automatically when a run containing this test finishes.
 - Two entry points:
   1. Search box on this page.
   2. Flaky badge on `RunDetailPage` / `TestHeader` → links to `/charts/test-reliability?testId=<id>`.
@@ -218,6 +221,7 @@ packages/web/src/
 - Per-chart controls: URL search params on `/charts/<id>` (`?interval=day&days=30&branch=main`).
 - Test reliability test selection: `?testId=abc123` — enables shareable links and browser back navigation.
 - All data fetching via TanStack React Query (same pattern as existing hooks).
+- **Auto-refresh via SSE:** `ChartsPage`, `ChartDetailPage`, and `TestReliabilityPage` each call `useServerEvents` (already exists at `hooks/useServerEvents.ts`). On `run:complete` event, call `queryClient.invalidateQueries` on the relevant query key. No polling needed — purely event-driven. The existing SSE hook handles reconnection.
 
 ---
 
@@ -229,7 +233,7 @@ packages/web/src/
 | **2** | Web — Routing + Dashboard | TopNav update, App.tsx routes, `ChartsPage` with tiles (static/mock data first) |
 | **3** | Web — Chart Detail | `ChartDetailPage`, `TrendChart`, `DurationChart`, `ChartControls`, `useRunTimeline` hook |
 | **4** | Web — Test Reliability | `TestReliabilityPage`, `DotTimeline`, `TestSearch`, `useTestSearch`, `useTestHistory` |
-| **5** | Integration & Polish | Flaky badge → reliability link in `RunDetailPage`/`TestHeader`, filter persistence, responsive tuning, loading/error states |
+| **5** | Integration & Polish | Flaky badge → reliability link in `RunDetailPage`/`TestHeader`, SSE auto-refresh wiring on all chart pages, filter persistence, responsive tuning, loading/error states |
 
 ---
 
@@ -262,5 +266,5 @@ For Session 1 specifically: hit new endpoints via curl/Postman to verify respons
 - Chart export (PNG/CSV) — future
 - Alerting / thresholds — future
 - Comparing two branches side-by-side on same chart — future
-- Real-time chart updates via SSE — future
+- ~~Real-time chart updates via SSE~~ — **implemented** (uses existing `useServerEvents` + query invalidation)
 - Mobile-optimized touch interactions for charts — future (responsive layout yes, touch gestures no)
