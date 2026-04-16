@@ -4,8 +4,8 @@ import ChartControls, { type ControlsValue } from '../components/charts/ChartCon
 import ChartFilterBar, { type FilterValue } from '../components/charts/ChartFilterBar.js'
 import DurationChart from '../components/charts/DurationChart.js'
 import TrendChart from '../components/charts/TrendChart.js'
-import { useRunTimeline } from '../hooks/useRunTimeline.js'
 import { useRunsMeta } from '../hooks/useRunsMeta.js'
+import { useRunTimeline } from '../hooks/useRunTimeline.js'
 import type { TimelineBucket } from '../lib/api.js'
 import { type ChartId, getChartConfig } from '../lib/charts.js'
 
@@ -69,17 +69,17 @@ export default function ChartDetailPage() {
   const validId = chartId as ChartId
   const config = getChartConfig(validId)
 
-  if (!config || validId === 'test-reliability') {
-    navigate('/charts', { replace: true })
-    return null
-  }
-
   const timelineParams =
     controls.interval === 'run'
       ? { interval: 'run' as const, limit: controls.limit, ...filter }
       : { interval: controls.interval, days: controls.days, ...filter }
 
   const { data: buckets = [], isLoading } = useRunTimeline(timelineParams)
+
+  if (!config || validId === 'test-reliability') {
+    navigate('/charts', { replace: true })
+    return null
+  }
 
   const detail = CHART_CONFIGS_DETAIL[validId as Exclude<ChartId, 'test-reliability'>]
   const latest = buckets.length > 0 ? detail.getValue(buckets[buckets.length - 1]) : null
