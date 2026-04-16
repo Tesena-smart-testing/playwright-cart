@@ -6,6 +6,16 @@ import { hashPassword, verifyPassword } from '../auth/utils.js'
 import { db } from '../db/client.js'
 import { users } from '../db/schema.js'
 
+// Keep in sync with ChartId in packages/web/src/lib/charts.ts
+const VALID_CHART_IDS = new Set([
+  'pass-rate',
+  'failures',
+  'flaky',
+  'duration',
+  'total-tests',
+  'test-reliability',
+])
+
 export const usersRouter = new Hono<HonoEnv>()
 
 // ── Admin-only routes ──────────────────────────────────────────────────────────
@@ -83,6 +93,7 @@ usersRouter.patch('/me', async (c) => {
     currentPassword?: unknown
     theme?: unknown
     runsPerPage?: unknown
+    chartOrder?: unknown
   }>()
 
   const updateData: Partial<{
@@ -90,6 +101,7 @@ usersRouter.patch('/me', async (c) => {
     passwordHash: string
     theme: 'dark' | 'light' | 'system'
     runsPerPage: number
+    chartOrder: string[] | null
   }> = {}
 
   // Password change: currentPassword required and verified
@@ -154,6 +166,21 @@ usersRouter.patch('/me', async (c) => {
     updateData.runsPerPage = body.runsPerPage as number
   }
 
+  if (body.chartOrder !== undefined) {
+    if (body.chartOrder === null) {
+      updateData.chartOrder = null
+    } else if (
+      !Array.isArray(body.chartOrder) ||
+      body.chartOrder.length !== 6 ||
+      !body.chartOrder.every((id) => typeof id === 'string' && VALID_CHART_IDS.has(id)) ||
+      new Set(body.chartOrder).size !== 6
+    ) {
+      return c.json({ error: 'chartOrder must be an array of all 6 valid chart IDs' }, 400)
+    } else {
+      updateData.chartOrder = body.chartOrder as string[]
+    }
+  }
+
   if (Object.keys(updateData).length === 0) {
     return c.json({ error: 'No valid fields to update' }, 400)
   }
@@ -165,6 +192,7 @@ usersRouter.patch('/me', async (c) => {
         role: 'admin' | 'user'
         theme: 'dark' | 'light' | 'system'
         runsPerPage: number
+        chartOrder: string[] | null
       }
     | undefined
   try {
@@ -174,6 +202,7 @@ usersRouter.patch('/me', async (c) => {
       role: users.role,
       theme: users.theme,
       runsPerPage: users.runsPerPage,
+      chartOrder: users.chartOrder,
     })
   } catch (err: unknown) {
     // Unique constraint violation on username
