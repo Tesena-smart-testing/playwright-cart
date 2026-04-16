@@ -30,7 +30,7 @@ app.use(
   '/api/auth/login',
   rateLimiter({
     windowMs: 15 * 60 * 1000,
-    limit: 10,
+    limit: 100,
     keyGenerator: (c) => c.req.header('x-real-ip') ?? c.req.header('x-forwarded-for') ?? 'unknown',
   }),
 )
