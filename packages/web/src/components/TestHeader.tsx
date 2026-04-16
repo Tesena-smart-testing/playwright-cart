@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { getTestOutcome, type TestRecord } from '../lib/api.js'
 import { formatDuration } from '../lib/format.js'
 import StatusBadge from './StatusBadge.js'
@@ -42,9 +43,13 @@ export default function TestHeader({ test }: Props) {
           </span>
         )}
         {test.retry > 0 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-tn-yellow/10 px-3 py-1 font-mono text-xs text-tn-yellow">
+          <Link
+            to={`/charts/test-reliability?testId=${encodeURIComponent(test.testId)}`}
+            className="inline-flex items-center gap-1.5 rounded-full bg-tn-yellow/10 px-3 py-1 font-mono text-xs text-tn-yellow transition-colors hover:bg-tn-yellow/20"
+            title="View reliability history"
+          >
             Retry #{test.retry}
-          </span>
+          </Link>
         )}
         {test.tags.map((tag) => (
           <TagChip key={tag} tag={tag} />

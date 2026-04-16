@@ -6,6 +6,7 @@ export type AuthUser =
       role: 'admin' | 'user'
       theme: 'dark' | 'light' | 'system'
       runsPerPage: number
+      chartOrder: string[] | null
       exp: number
       jti: string
     }

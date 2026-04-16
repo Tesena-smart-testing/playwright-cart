@@ -23,6 +23,7 @@ const THEME_LABELS: Record<Theme, string> = {
 
 const NAV_LINKS = [
   { to: '/', label: 'Runs' },
+  { to: '/charts', label: 'Charts' },
   { to: '/settings', label: 'Settings' },
 ]
 

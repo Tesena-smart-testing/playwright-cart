@@ -77,6 +77,26 @@ runs.get('/meta', async (c) => {
   })
 })
 
+runs.get('/stats/timeline', async (c) => {
+  const intervalRaw = c.req.query('interval') ?? 'day'
+  const interval = (['run', 'day', 'week'] as const).includes(intervalRaw as 'run' | 'day' | 'week')
+    ? (intervalRaw as 'run' | 'day' | 'week')
+    : 'day'
+  const daysRaw = Number(c.req.query('days') ?? '30')
+  const days = Number.isNaN(daysRaw) ? 30 : Math.min(365, Math.max(1, daysRaw))
+  const limitRaw = c.req.query('limit')
+  const limitNum = limitRaw !== undefined ? Number(limitRaw) : undefined
+  const limit =
+    limitNum !== undefined && !Number.isNaN(limitNum)
+      ? Math.min(200, Math.max(1, limitNum))
+      : undefined
+  const project = c.req.query('project') || undefined
+  const branch = c.req.query('branch') || undefined
+  const tags = normalizeTags(c.req.queries('tag'))
+  const buckets = await storage.getRunTimeline({ interval, days, limit, project, branch, tags })
+  return c.json({ buckets })
+})
+
 runs.get('/:runId', async (c) => {
   const runId = c.req.param('runId')
   const run = await storage.getRun(runId)

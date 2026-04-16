@@ -69,6 +69,7 @@ export const tests = pgTable(
   (t) => [
     uniqueIndex('tests_run_test_uniq').on(t.runId, t.testId),
     index('tests_run_id_idx').on(t.runId),
+    index('tests_test_id_idx').on(t.testId),
   ],
 )
 
@@ -110,6 +111,7 @@ export const users = pgTable('users', {
   role: userRoleEnum('role').notNull().default('user'),
   theme: userThemeEnum('theme').notNull().default('system'),
   runsPerPage: smallint('runs_per_page').notNull().default(10),
+  chartOrder: text('chart_order').array(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

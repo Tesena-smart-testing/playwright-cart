@@ -313,3 +313,131 @@ export function getReportDir(runId: string): string {
   mkdirSync(dir, { recursive: true })
   return dir
 }
+
+// ---------- timeline / stats ----------
+
+export interface TimelineBucket {
+  key: string
+  startedAt: string
+  runCount: number
+  total: number
+  passed: number
+  failed: number
+  flaky: number
+  avgDurationMs: number
+  p95DurationMs: number
+}
+
+export interface TimelineParams {
+  project?: string
+  branch?: string
+  tags?: string[]
+  interval: 'run' | 'day' | 'week'
+  days?: number
+  limit?: number
+}
+
+export async function getRunTimeline(params: TimelineParams): Promise<TimelineBucket[]> {
+  const { project, branch, tags = [], interval, days = 30, limit } = params
+
+  const conditions: SQL[] = [sql`r.status != 'running'`]
+  if (project) conditions.push(sql`r.project = ${project}`)
+  if (branch) conditions.push(sql`r.branch = ${branch}`)
+  if (tags.length > 0) {
+    const tagParams = sql.join(
+      tags.map((t) => sql`${t}`),
+      sql`, `,
+    )
+    conditions.push(sql`r.tags @> ARRAY[${tagParams}]::text[]`)
+  }
+
+  const where = sql.join(conditions, sql` AND `)
+
+  if (interval === 'run') {
+    const limitVal = limit ?? 50
+    const rows = await db.execute<{
+      key: string
+      started_at: string
+      run_count: number
+      total: number
+      passed: number
+      failed: number
+      flaky: number
+      avg_duration_ms: number
+      p95_duration_ms: number
+    }>(sql`
+      SELECT
+        r.run_id AS key,
+        r.started_at::text AS started_at,
+        1 AS run_count,
+        COUNT(t.id)::int AS total,
+        COUNT(t.id) FILTER (WHERE t.status = 'passed')::int AS passed,
+        COUNT(t.id) FILTER (WHERE t.status IN ('failed','timedOut','interrupted'))::int AS failed,
+        COUNT(t.id) FILTER (WHERE t.retry > 0 AND t.status = 'passed')::int AS flaky,
+        COALESCE(AVG(t.duration_ms)::int, 0) AS avg_duration_ms,
+        COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY t.duration_ms)::int, 0) AS p95_duration_ms
+      FROM runs r
+      LEFT JOIN tests t ON t.run_id = r.run_id
+      WHERE ${where}
+      GROUP BY r.run_id, r.started_at
+      ORDER BY r.started_at DESC
+      LIMIT ${limitVal}
+    `)
+    return rows.rows
+      .map((r) => ({
+        key: r.key,
+        startedAt: r.started_at,
+        runCount: r.run_count,
+        total: r.total,
+        passed: r.passed,
+        failed: r.failed,
+        flaky: r.flaky,
+        avgDurationMs: r.avg_duration_ms,
+        p95DurationMs: r.p95_duration_ms,
+      }))
+      .reverse()
+  }
+
+  // trunc is safe to use with sql.raw() — value is enum-controlled ('day' or 'week'), never user input
+  const trunc = sql.raw(interval === 'week' ? 'week' : 'day')
+  const days_int = Math.floor(days)
+  const rows = await db.execute<{
+    key: string
+    started_at: string
+    run_count: number
+    total: number
+    passed: number
+    failed: number
+    flaky: number
+    avg_duration_ms: number
+    p95_duration_ms: number
+  }>(sql`
+    SELECT
+      date_trunc('${trunc}', r.started_at)::text AS key,
+      MIN(r.started_at)::text AS started_at,
+      COUNT(DISTINCT r.run_id)::int AS run_count,
+      COUNT(t.id)::int AS total,
+      COUNT(t.id) FILTER (WHERE t.status = 'passed')::int AS passed,
+      COUNT(t.id) FILTER (WHERE t.status IN ('failed','timedOut','interrupted'))::int AS failed,
+      COUNT(t.id) FILTER (WHERE t.retry > 0 AND t.status = 'passed')::int AS flaky,
+      COALESCE(AVG(t.duration_ms)::int, 0) AS avg_duration_ms,
+      COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY t.duration_ms)::int, 0) AS p95_duration_ms
+    FROM runs r
+    LEFT JOIN tests t ON t.run_id = r.run_id
+    WHERE ${where}
+      AND r.started_at >= NOW() - interval '1 day' * ${days_int}
+    GROUP BY date_trunc('${trunc}', r.started_at)
+    ORDER BY key ASC
+  `)
+  return rows.rows.map((r) => ({
+    key: r.key,
+    startedAt: r.started_at,
+    runCount: r.run_count,
+    total: r.total,
+    passed: r.passed,
+    failed: r.failed,
+    flaky: r.flaky,
+    avgDurationMs: r.avg_duration_ms,
+    p95DurationMs: r.p95_duration_ms,
+  }))
+}

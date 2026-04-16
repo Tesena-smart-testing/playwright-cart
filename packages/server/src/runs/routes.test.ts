@@ -514,6 +514,82 @@ describe('POST /api/runs/:runId/complete', () => {
   })
 })
 
+describe('GET /api/runs/stats/timeline', () => {
+  async function seedRun(
+    project: string,
+    branch: string,
+    startedAt: string,
+    status: 'passed' | 'failed',
+  ) {
+    const res = await runs.request('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project, branch, tags: [], startedAt }),
+    })
+    const { runId } = (await res.json()) as { runId: string }
+    await storage.updateRun(runId, { completedAt: startedAt, status })
+    return runId
+  }
+
+  it('returns daily buckets with aggregated stats', async () => {
+    const runId = await seedRun('proj', 'main', '2026-04-10T10:00:00.000Z', 'passed')
+    await storage.writeTestResult(runId, {
+      testId: 't1',
+      title: 'test 1',
+      tags: [],
+      titlePath: ['suite'],
+      location: { file: 'a.spec.ts', line: 1, column: 0 },
+      status: 'passed',
+      duration: 1000,
+      retry: 0,
+      errors: [],
+      annotations: [],
+      attachments: [],
+    })
+    await storage.writeTestResult(runId, {
+      testId: 't2',
+      title: 'test 2',
+      tags: [],
+      titlePath: ['suite'],
+      location: { file: 'a.spec.ts', line: 2, column: 0 },
+      status: 'failed',
+      duration: 2000,
+      retry: 0,
+      errors: [],
+      annotations: [],
+      attachments: [],
+    })
+
+    const res = await runs.request('/stats/timeline?interval=day&days=30')
+    expect(res.status).toBe(200)
+    const { buckets } = (await res.json()) as { buckets: storage.TimelineBucket[] }
+    expect(buckets).toHaveLength(1)
+    expect(buckets[0].total).toBe(2)
+    expect(buckets[0].passed).toBe(1)
+    expect(buckets[0].failed).toBe(1)
+    expect(buckets[0].flaky).toBe(0)
+    expect(buckets[0].runCount).toBe(1)
+    expect(buckets[0].avgDurationMs).toBe(1500)
+  })
+
+  it('filters by project', async () => {
+    await seedRun('proj-a', 'main', '2026-04-10T10:00:00.000Z', 'passed')
+    await seedRun('proj-b', 'main', '2026-04-10T10:00:00.000Z', 'passed')
+    const res = await runs.request('/stats/timeline?interval=day&days=30&project=proj-a')
+    const { buckets } = (await res.json()) as { buckets: storage.TimelineBucket[] }
+    expect(buckets).toHaveLength(1)
+  })
+
+  it('returns per-run buckets when interval=run', async () => {
+    await seedRun('proj', 'main', '2026-04-10T10:00:00.000Z', 'passed')
+    await seedRun('proj', 'main', '2026-04-11T10:00:00.000Z', 'passed')
+    const res = await runs.request('/stats/timeline?interval=run&limit=10')
+    const { buckets } = (await res.json()) as { buckets: storage.TimelineBucket[] }
+    expect(buckets).toHaveLength(2)
+    expect(buckets[0].runCount).toBe(1)
+  })
+})
+
 describe('GET /api/runs/:runId/tests/:testId', () => {
   it('returns 404 when run does not exist', async () => {
     const res = await runs.request('/no-such-run/tests/test-1')

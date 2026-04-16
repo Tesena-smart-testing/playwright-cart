@@ -27,6 +27,7 @@ export const authMiddleware: MiddlewareHandler<HonoEnv> = async (c, next) => {
             role: user.role,
             theme: user.theme,
             runsPerPage: user.runsPerPage,
+            chartOrder: user.chartOrder ?? null,
             exp: result.exp,
             jti: result.jti,
           })
