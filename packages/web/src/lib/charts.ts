@@ -60,5 +60,5 @@ export type ChartId = (typeof CHART_CONFIGS)[number]['id']
 export const DEFAULT_ORDER: ChartId[] = CHART_CONFIGS.map((c) => c.id)
 
 export function getChartConfig(id: ChartId) {
-  return CHART_CONFIGS.find((c) => c.id === id)!
+  return CHART_CONFIGS.find((c) => c.id === id) as (typeof CHART_CONFIGS)[number]
 }
