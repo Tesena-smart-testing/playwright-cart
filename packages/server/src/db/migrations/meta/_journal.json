@@ -57,6 +57,13 @@
       "when": 1776316644211,
       "tag": "0007_rare_surge",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776318123204,
+      "tag": "0008_majestic_makkari",
+      "breakpoints": true
     }
   ]
 }

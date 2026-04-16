@@ -69,6 +69,7 @@ export const tests = pgTable(
   (t) => [
     uniqueIndex('tests_run_test_uniq').on(t.runId, t.testId),
     index('tests_run_id_idx').on(t.runId),
+    index('tests_test_id_idx').on(t.testId),
   ],
 )
 

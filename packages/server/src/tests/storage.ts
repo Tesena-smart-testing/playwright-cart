@@ -1,4 +1,4 @@
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { runs, tests } from '../db/schema.js'
 
@@ -21,9 +21,10 @@ export async function searchTests(q: string, project?: string): Promise<TestSear
     .innerJoin(runs, eq(tests.runId, runs.runId))
     .where(
       project
-        ? sql`${tests.title} ILIKE ${'%' + q + '%'} AND ${runs.project} = ${project}`
-        : sql`${tests.title} ILIKE ${'%' + q + '%'}`,
+        ? and(ilike(tests.title, `%${q}%`), eq(runs.project, project))
+        : ilike(tests.title, `%${q}%`),
     )
+    .orderBy(tests.testId, desc(runs.startedAt))
     .limit(20)
   return rows
 }
@@ -48,8 +49,8 @@ export async function getTestHistory(
   branch?: string,
 ): Promise<TestHistoryResult> {
   const baseCondition = branch
-    ? sql`${tests.testId} = ${testId} AND ${runs.branch} = ${branch}`
-    : sql`${tests.testId} = ${testId}`
+    ? and(eq(tests.testId, testId), eq(runs.branch, branch))
+    : eq(tests.testId, testId)
 
   const rows = await db
     .select({
