@@ -343,10 +343,13 @@ export async function getRunTimeline(params: TimelineParams): Promise<TimelineBu
   const conditions: SQL[] = [sql`r.status != 'running'`]
   if (project) conditions.push(sql`r.project = ${project}`)
   if (branch) conditions.push(sql`r.branch = ${branch}`)
-  if (tags.length > 0)
-    conditions.push(
-      sql`r.tags @> ${sql.raw(`ARRAY[${tags.map((t) => `'${t.replace(/'/g, "''")}'`).join(',')}]::text[]`)}`,
+  if (tags.length > 0) {
+    const tagParams = sql.join(
+      tags.map((t) => sql`${t}`),
+      sql`, `,
     )
+    conditions.push(sql`r.tags @> ARRAY[${tagParams}]::text[]`)
+  }
 
   const where = sql.join(conditions, sql` AND `)
 
@@ -395,8 +398,9 @@ export async function getRunTimeline(params: TimelineParams): Promise<TimelineBu
       .reverse()
   }
 
+  // trunc is safe to use with sql.raw() — value is enum-controlled ('day' or 'week'), never user input
   const trunc = sql.raw(interval === 'week' ? 'week' : 'day')
-  const daysInterval = sql.raw(`'${Math.floor(days)} days'::interval`)
+  const days_int = Math.floor(days)
   const rows = await db.execute<{
     key: string
     started_at: string
@@ -421,7 +425,7 @@ export async function getRunTimeline(params: TimelineParams): Promise<TimelineBu
     FROM runs r
     LEFT JOIN tests t ON t.run_id = r.run_id
     WHERE ${where}
-      AND r.started_at >= NOW() - ${daysInterval}
+      AND r.started_at >= NOW() - interval '1 day' * ${days_int}
     GROUP BY date_trunc('${trunc}', r.started_at)
     ORDER BY key ASC
   `)

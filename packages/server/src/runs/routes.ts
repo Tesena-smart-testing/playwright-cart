@@ -82,9 +82,14 @@ runs.get('/stats/timeline', async (c) => {
   const interval = (['run', 'day', 'week'] as const).includes(intervalRaw as 'run' | 'day' | 'week')
     ? (intervalRaw as 'run' | 'day' | 'week')
     : 'day'
-  const days = Math.min(365, Math.max(1, Number(c.req.query('days') ?? '30')))
+  const daysRaw = Number(c.req.query('days') ?? '30')
+  const days = Number.isNaN(daysRaw) ? 30 : Math.min(365, Math.max(1, daysRaw))
   const limitRaw = c.req.query('limit')
-  const limit = limitRaw ? Math.min(200, Math.max(1, Number(limitRaw))) : undefined
+  const limitNum = limitRaw !== undefined ? Number(limitRaw) : undefined
+  const limit =
+    limitNum !== undefined && !Number.isNaN(limitNum)
+      ? Math.min(200, Math.max(1, limitNum))
+      : undefined
   const project = c.req.query('project') || undefined
   const branch = c.req.query('branch') || undefined
   const tags = normalizeTags(c.req.queries('tag'))
