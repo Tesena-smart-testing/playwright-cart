@@ -20,6 +20,7 @@ export function useServerEvents() {
       const { runId } = JSON.parse(e.data) as { runId: string }
       queryClient.invalidateQueries({ queryKey: ['run', runId] })
       queryClient.invalidateQueries({ queryKey: ['runs'] })
+      queryClient.invalidateQueries({ queryKey: ['runTimeline'] })
     })
 
     // run:complete is emitted as run:updated when status transitions to terminal
