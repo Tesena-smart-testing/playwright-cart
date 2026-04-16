@@ -8,6 +8,7 @@ export interface CurrentUser {
   theme: Theme
   runsPerPage: number
   expiresAt: number
+  chartOrder: string[] | null
 }
 
 export type RunStatus = 'running' | 'passed' | 'failed' | 'interrupted' | 'timedOut'
@@ -91,6 +92,7 @@ export async function updateMe(data: {
   currentPassword?: string
   theme?: string
   runsPerPage?: number
+  chartOrder?: string[] | null
 }): Promise<CurrentUser> {
   const res = await fetch('/api/users/me', {
     method: 'PATCH',
@@ -284,4 +286,86 @@ export async function updateSettings(data: Partial<AppSettings>): Promise<AppSet
     throw new Error((err as { error?: string }).error || `HTTP ${res.status}`)
   }
   return res.json() as Promise<AppSettings>
+}
+
+// Charts
+
+export type TimelineInterval = 'run' | 'day' | 'week'
+
+export interface TimelineBucket {
+  key: string
+  startedAt: string
+  runCount: number
+  total: number
+  passed: number
+  failed: number
+  flaky: number
+  avgDurationMs: number
+  p95DurationMs: number
+}
+
+export interface TimelineParams {
+  interval: TimelineInterval
+  days?: number
+  limit?: number
+  project?: string
+  branch?: string
+  tags?: string[]
+}
+
+export async function fetchRunTimeline(params: TimelineParams): Promise<TimelineBucket[]> {
+  const q = new URLSearchParams()
+  q.set('interval', params.interval)
+  if (params.days !== undefined) q.set('days', String(params.days))
+  if (params.limit !== undefined) q.set('limit', String(params.limit))
+  if (params.project) q.set('project', params.project)
+  if (params.branch) q.set('branch', params.branch)
+  for (const tag of params.tags ?? []) q.append('tag', tag)
+  const res = await fetch(`/api/runs/stats/timeline?${q}`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = (await res.json()) as { buckets: TimelineBucket[] }
+  return data.buckets
+}
+
+export interface TestSearchResult {
+  testId: string
+  title: string
+  titlePath: string[]
+  locationFile: string
+}
+
+export async function fetchTestSearch(q: string, project?: string): Promise<TestSearchResult[]> {
+  const params = new URLSearchParams({ q })
+  if (project) params.set('project', project)
+  const res = await fetch(`/api/tests/search?${params}`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const data = (await res.json()) as { tests: TestSearchResult[] }
+  return data.tests
+}
+
+export interface TestHistoryEntry {
+  runId: string
+  startedAt: string
+  status: TestStatus
+  durationMs: number
+  retry: number
+  branch: string | null
+}
+
+export interface TestHistoryResult {
+  test: TestSearchResult
+  history: TestHistoryEntry[]
+}
+
+export async function fetchTestHistory(
+  testId: string,
+  limit = 50,
+  branch?: string,
+): Promise<TestHistoryResult> {
+  const params = new URLSearchParams({ limit: String(limit) })
+  if (branch) params.set('branch', branch)
+  const res = await fetch(`/api/tests/${encodeURIComponent(testId)}/history?${params}`)
+  if (res.status === 404) throw new NotFoundError('Test not found')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<TestHistoryResult>
 }
