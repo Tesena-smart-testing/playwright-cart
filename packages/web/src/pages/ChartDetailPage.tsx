@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import ChartControls, { type ControlsValue } from '../components/charts/ChartControls.js'
 import ChartFilterBar, { type FilterValue } from '../components/charts/ChartFilterBar.js'
@@ -74,12 +74,14 @@ export default function ChartDetailPage() {
       ? { interval: 'run' as const, limit: controls.limit, ...filter }
       : { interval: controls.interval, days: controls.days, ...filter }
 
-  const { data: buckets = [], isLoading } = useRunTimeline(timelineParams)
+  const invalid = !config || validId === 'test-reliability'
+  const { data: buckets = [], isLoading } = useRunTimeline(timelineParams, !invalid)
 
-  if (!config || validId === 'test-reliability') {
-    navigate('/charts', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (invalid) navigate('/charts', { replace: true })
+  }, [invalid, navigate])
+
+  if (invalid) return null
 
   const detail = CHART_CONFIGS_DETAIL[validId as Exclude<ChartId, 'test-reliability'>]
   const latest = buckets.length > 0 ? detail.getValue(buckets[buckets.length - 1]) : null

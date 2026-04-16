@@ -115,11 +115,9 @@ export default function TestReliabilityPage() {
                   type="button"
                   onClick={() => setLimit(l || 200)}
                   className={`border-none px-3 py-1.5 transition-colors ${
-                    l === 0
-                      ? limit === 200
-                      : limit === l
-                        ? 'bg-tn-blue/20 text-tn-blue'
-                        : 'bg-tn-highlight text-tn-muted hover:text-tn-fg'
+                    (l === 0 ? limit === 200 : limit === l)
+                      ? 'bg-tn-blue/20 text-tn-blue'
+                      : 'bg-tn-highlight text-tn-muted hover:text-tn-fg'
                   }`}
                 >
                   {l === 0 ? 'All' : `Last ${l}`}
