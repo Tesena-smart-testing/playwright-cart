@@ -14,7 +14,9 @@ import { useCurrentUser } from '../hooks/useCurrentUser.js'
 import { useRunsMeta } from '../hooks/useRunsMeta.js'
 import { useRunTimeline } from '../hooks/useRunTimeline.js'
 import { updateMe } from '../lib/api.js'
-import { type ChartId, DEFAULT_ORDER, CHART_CONFIGS } from '../lib/charts.js'
+import { CHART_CONFIGS, type ChartId, DEFAULT_ORDER } from '../lib/charts.js'
+
+const VALID_CHART_IDS = new Set<string>(CHART_CONFIGS.map((c) => c.id))
 
 export default function ChartsPage() {
   const { user } = useCurrentUser()
@@ -23,12 +25,11 @@ export default function ChartsPage() {
   const [order, setOrder] = useState<ChartId[]>(DEFAULT_ORDER)
 
   // Sync order from user preference once loaded — validate all IDs before applying
-  const validChartIds = new Set<string>(CHART_CONFIGS.map((c) => c.id))
   useEffect(() => {
     if (
       user?.chartOrder &&
       user.chartOrder.length === 6 &&
-      user.chartOrder.every((id) => validChartIds.has(id))
+      user.chartOrder.every((id) => VALID_CHART_IDS.has(id))
     ) {
       setOrder(user.chartOrder as ChartId[])
     }
