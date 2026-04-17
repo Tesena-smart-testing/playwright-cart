@@ -7,6 +7,7 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import { arrayMove, rectSortingStrategy, SortableContext } from '@dnd-kit/sortable'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ChartFilterBar, { type FilterValue } from '../components/charts/ChartFilterBar.js'
 import ChartTile from '../components/charts/ChartTile.js'
@@ -19,6 +20,7 @@ import { CHART_CONFIGS, type ChartId, DEFAULT_ORDER } from '../lib/charts.js'
 const VALID_CHART_IDS = new Set<string>(CHART_CONFIGS.map((c) => c.id))
 
 export default function ChartsPage() {
+  const queryClient = useQueryClient()
   const { user } = useCurrentUser()
   const { data: meta } = useRunsMeta()
   const [filter, setFilter] = useState<FilterValue>({})
@@ -42,12 +44,17 @@ export default function ChartsPage() {
       if (persistTimer.current) clearTimeout(persistTimer.current)
     }
   }, [])
-  const persistOrder = useCallback((newOrder: ChartId[]) => {
-    if (persistTimer.current) clearTimeout(persistTimer.current)
-    persistTimer.current = setTimeout(() => {
-      updateMe({ chartOrder: newOrder }).catch(() => {})
-    }, 500)
-  }, [])
+  const persistOrder = useCallback(
+    (newOrder: ChartId[]) => {
+      if (persistTimer.current) clearTimeout(persistTimer.current)
+      persistTimer.current = setTimeout(() => {
+        updateMe({ chartOrder: newOrder })
+          .then(() => queryClient.invalidateQueries({ queryKey: ['me'] }))
+          .catch(() => {})
+      }, 500)
+    },
+    [queryClient],
+  )
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
