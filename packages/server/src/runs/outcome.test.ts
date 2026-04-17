@@ -29,6 +29,10 @@ describe('applyOutcomeInversion', () => {
     expect(applyOutcomeInversion(t('timedOut', ['fail'])).status).toBe('timedOut')
   })
 
+  it('leaves interrupted unchanged even with fail annotation', () => {
+    expect(applyOutcomeInversion(t('interrupted', ['fail'])).status).toBe('interrupted')
+  })
+
   it('leaves skipped unchanged even with fail annotation', () => {
     expect(applyOutcomeInversion(t('skipped', ['fail'])).status).toBe('skipped')
   })
