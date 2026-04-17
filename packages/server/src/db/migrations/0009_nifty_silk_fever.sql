@@ -1,0 +1,1 @@
+CREATE INDEX "test_annotations_test_pk_type_idx" ON "test_annotations" USING btree ("test_pk","type");

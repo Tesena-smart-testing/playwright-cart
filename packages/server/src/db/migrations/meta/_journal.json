@@ -64,6 +64,13 @@
       "when": 1776318123204,
       "tag": "0008_majestic_makkari",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776421782502,
+      "tag": "0009_nifty_silk_fever",
+      "breakpoints": true
     }
   ]
 }

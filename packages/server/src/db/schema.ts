@@ -83,15 +83,19 @@ export const testErrors = pgTable('test_errors', {
   stack: text('stack'),
 })
 
-export const testAnnotations = pgTable('test_annotations', {
-  id: bigserial('id', { mode: 'number' }).primaryKey(),
-  testPk: bigint('test_pk', { mode: 'number' })
-    .notNull()
-    .references(() => tests.id, { onDelete: 'cascade' }),
-  position: integer('position').notNull(),
-  type: text('type').notNull(),
-  description: text('description'),
-})
+export const testAnnotations = pgTable(
+  'test_annotations',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    testPk: bigint('test_pk', { mode: 'number' })
+      .notNull()
+      .references(() => tests.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    type: text('type').notNull(),
+    description: text('description'),
+  },
+  (t) => [index('test_annotations_test_pk_type_idx').on(t.testPk, t.type)],
+)
 
 export const testAttachments = pgTable('test_attachments', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
