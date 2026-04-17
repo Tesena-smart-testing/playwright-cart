@@ -99,9 +99,21 @@ export default function ChartTile({ id, buckets, isLoading }: Props) {
         </div>
         {!isReliability && !isLoading && (
           <span
-            className={`rounded-full px-2 py-0.5 font-mono text-xs ${stat.up ? 'bg-tn-green/15 text-tn-green' : 'bg-tn-red/15 text-tn-red'}`}
+            className="group/delta relative inline-block"
+            aria-describedby={`delta-tooltip-${id}`}
           >
-            {stat.delta}
+            <span
+              className={`rounded-full px-2 py-0.5 font-mono text-xs ${stat.up ? 'bg-tn-green/15 text-tn-green' : 'bg-tn-red/15 text-tn-red'}`}
+            >
+              {stat.delta}
+            </span>
+            <span
+              id={`delta-tooltip-${id}`}
+              role="tooltip"
+              className="pointer-events-none invisible absolute bottom-full left-1/2 z-50 mb-2 w-64 -translate-x-1/2 whitespace-normal rounded border border-tn-border bg-tn-panel px-2.5 py-1.5 font-mono text-xs text-tn-fg opacity-0 shadow-xl transition-opacity duration-150 group-hover/delta:visible group-hover/delta:opacity-100"
+            >
+              {config.deltaTooltip}
+            </span>
           </span>
         )}
       </div>
