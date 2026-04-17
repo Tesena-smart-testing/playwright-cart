@@ -8,6 +8,7 @@ import type { HonoEnv } from '../auth/types.js'
 import { db } from '../db/client.js'
 import { runs as runsSchema } from '../db/schema.js'
 import { type RunEvent, runEmitter } from '../events.js'
+import { applyOutcomeInversion } from './outcome.js'
 import * as storage from './storage.js'
 
 export const runs = new Hono<HonoEnv>()
@@ -102,7 +103,7 @@ runs.get('/:runId', async (c) => {
   const run = await storage.getRun(runId)
   if (!run) return c.json({ error: 'Not found' }, 404)
   const tests = await storage.getTestResults(runId)
-  return c.json({ ...run, tests })
+  return c.json({ ...run, tests: tests.map(applyOutcomeInversion) })
 })
 
 runs.get('/:runId/tests/:testId', async (c) => {
@@ -111,7 +112,7 @@ runs.get('/:runId/tests/:testId', async (c) => {
   if (!run) return c.json({ error: 'Not found' }, 404)
   const test = await storage.getTestResult(runId, testId)
   if (!test) return c.json({ error: 'Not found' }, 404)
-  return c.json(test)
+  return c.json(applyOutcomeInversion(test))
 })
 
 runs.post('/:runId/complete', async (c) => {
