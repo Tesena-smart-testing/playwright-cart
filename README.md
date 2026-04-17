@@ -133,7 +133,7 @@ This inversion is applied consistently across all views:
 - **Suite header** — failure counter (`N failed`)
 - **Run header** — pass-rate bar and stat pills (`N passed` / `N failed`)
 
-The logic lives in `getTestOutcome()` (`packages/web/src/lib/api.ts`). No server-side changes are involved — the raw status is stored as Playwright reports it; the inversion is display-only.
+This applies also for the `Failures` chart. The expected failures are not reported in this chart. Unexpected failures are.
 
 ---
 
