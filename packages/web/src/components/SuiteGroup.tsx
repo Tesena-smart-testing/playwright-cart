@@ -170,12 +170,7 @@ function countTests(node: SuiteTreeNode): {
   const direct = node.tests.filter((t) => !t.retried)
   const result = {
     total: direct.length,
-    failed: direct.filter((t) => {
-      const outcome = getTestOutcome(t)
-      if (outcome === 'expected-failure') return false
-      if (outcome === 'unexpected-pass') return true
-      return t.status === 'failed' || t.status === 'timedOut'
-    }).length,
+    failed: direct.filter((t) => t.status === 'failed' || t.status === 'timedOut').length,
     flaky: node.tests.filter((t) => t.retried).length,
     skipped: direct.filter((t) => t.status === 'skipped').length,
   }
