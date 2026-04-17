@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TimelineBucket } from '../../lib/api.js'
 import type { ChartId } from '../../lib/charts.js'
@@ -66,18 +67,53 @@ export default function ChartTile({ id, buckets, isLoading }: Props) {
 
   const stat = getStat(id, buckets)
   const isReliability = id === 'test-reliability'
+  const wasDragging = useRef(false)
+
+  useEffect(() => {
+    if (isDragging) {
+      wasDragging.current = true
+    } else {
+      // Drag ended or cancelled — reset after the synthetic click (if any) fires
+      const t = setTimeout(() => {
+        wasDragging.current = false
+      }, 0)
+      return () => clearTimeout(t)
+    }
+  }, [isDragging])
+
+  function handleActivate() {
+    if (wasDragging.current) {
+      wasDragging.current = false
+      return
+    }
+    navigate(config.path)
+  }
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: outer <button> would nest the drag-handle <button>, which is invalid HTML
     <div
       ref={setNodeRef}
       style={style}
-      className="group relative flex flex-col gap-3 rounded-xl border border-tn-border bg-tn-panel p-4 transition-colors hover:border-current"
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${config.label} chart`}
+      onClick={handleActivate}
+      onKeyDown={(e) => {
+        if (e.key === ' ') {
+          e.preventDefault()
+          handleActivate()
+        } else if (e.key === 'Enter') {
+          handleActivate()
+        }
+      }}
+      className="group relative flex cursor-pointer flex-col gap-3 rounded-xl border border-tn-border bg-tn-panel p-4 transition-colors hover:border-current focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tn-accent"
     >
       {/* Drag handle */}
       <button
         type="button"
         {...attributes}
         {...listeners}
+        onClick={(e) => e.stopPropagation()}
         className="absolute right-3 top-3 cursor-grab text-tn-muted opacity-0 transition-opacity group-hover:opacity-60 active:cursor-grabbing"
         title="Drag to reorder"
         aria-label="Drag to reorder"
@@ -119,12 +155,7 @@ export default function ChartTile({ id, buckets, isLoading }: Props) {
       </div>
 
       {/* Chart / placeholder */}
-      <button
-        type="button"
-        className="cursor-pointer text-left"
-        onClick={() => navigate(config.path)}
-        aria-label={`Open ${config.label} chart`}
-      >
+      <div>
         {isReliability ? (
           <div className="flex h-[80px] flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-tn-border text-tn-muted">
             <span className="text-lg">Search</span>
@@ -141,7 +172,7 @@ export default function ChartTile({ id, buckets, isLoading }: Props) {
             height={80}
           />
         )}
-      </button>
+      </div>
 
       <p className="font-mono text-xs text-tn-muted">
         {isReliability
