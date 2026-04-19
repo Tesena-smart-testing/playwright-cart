@@ -383,3 +383,64 @@ export async function fetchTestHistory(
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json() as Promise<TestHistoryResult>
 }
+
+export interface AiSummary {
+  status: 'pending' | 'generating' | 'done' | 'error'
+  content: string | null
+  errorMsg: string | null
+  generatedAt: string | null
+  model: string
+  provider: string
+}
+
+export interface LlmSettings {
+  enabled: boolean
+  provider: string
+  model: string
+  isConfigured: boolean
+  providers: { name: string; models: { id: string; label: string }[] }[]
+}
+
+export async function fetchRunSummary(runId: string): Promise<AiSummary | null> {
+  const res = await fetch(`/api/runs/${runId}/summary`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<AiSummary | null>
+}
+
+export async function fetchTestSummary(runId: string, testId: string): Promise<AiSummary | null> {
+  const res = await fetch(`/api/runs/${runId}/tests/${testId}/summary`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<AiSummary | null>
+}
+
+export async function regenerateRunSummary(runId: string): Promise<void> {
+  const res = await fetch(`/api/runs/${runId}/summary/regenerate`, { method: 'POST' })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
+
+export async function regenerateTestSummary(runId: string, testId: string): Promise<void> {
+  const res = await fetch(`/api/runs/${runId}/tests/${testId}/summary/regenerate`, {
+    method: 'POST',
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+}
+
+export async function fetchLlmSettings(): Promise<LlmSettings> {
+  const res = await fetch('/api/settings/llm')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json() as Promise<LlmSettings>
+}
+
+export async function updateLlmSettings(patch: {
+  enabled?: boolean
+  provider?: string
+  model?: string
+  apiKey?: string
+}): Promise<void> {
+  const res = await fetch('/api/settings/llm', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+  if (!res.ok) throw new Error(await getErrorMessage(res, 'Failed to save LLM settings.'))
+}
