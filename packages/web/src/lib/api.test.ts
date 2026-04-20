@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TestStatus } from './api.js'
-import { fetchRun, fetchRuns, fetchTest, getTestOutcome, login, NotFoundError } from './api.js'
+import {
+  fetchRun,
+  fetchRuns,
+  fetchTest,
+  getTestOutcome,
+  login,
+  NotFoundError,
+  regenerateRunSummary,
+  regenerateTestSummary,
+} from './api.js'
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
@@ -170,5 +179,44 @@ describe('getTestOutcome', () => {
   it('returns normal for non-fail annotation types', () => {
     expect(getTestOutcome(makeTest('passed', ['slow']))).toBe('normal')
     expect(getTestOutcome(makeTest('failed', ['issue']))).toBe('normal')
+  })
+})
+
+describe('regenerateRunSummary', () => {
+  it('resolves on 202', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 202 }))
+    await expect(regenerateRunSummary('run-1')).resolves.toBeUndefined()
+    expect(fetch).toHaveBeenCalledWith('/api/runs/run-1/summary/regenerate', { method: 'POST' })
+  })
+
+  it('throws Error("HTTP 409") on 409 so component can detect already-generating', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: 'already_generating' }), { status: 409 }),
+    )
+    await expect(regenerateRunSummary('run-1')).rejects.toThrow('HTTP 409')
+  })
+
+  it('throws Error("HTTP 422") on 422', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: 'llm_not_configured' }), { status: 422 }),
+    )
+    await expect(regenerateRunSummary('run-1')).rejects.toThrow('HTTP 422')
+  })
+})
+
+describe('regenerateTestSummary', () => {
+  it('resolves on 202', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 202 }))
+    await expect(regenerateTestSummary('run-1', 'test-1')).resolves.toBeUndefined()
+    expect(fetch).toHaveBeenCalledWith('/api/runs/run-1/tests/test-1/summary/regenerate', {
+      method: 'POST',
+    })
+  })
+
+  it('throws Error("HTTP 409") on 409 so component can detect already-generating', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ error: 'already_generating' }), { status: 409 }),
+    )
+    await expect(regenerateTestSummary('run-1', 'test-1')).rejects.toThrow('HTTP 409')
   })
 })

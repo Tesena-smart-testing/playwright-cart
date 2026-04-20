@@ -2,12 +2,24 @@ import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { closeDb } from '../db/client.js'
+import {
+  generateRunSummaries,
+  markRunSummaryGenerating,
+  markTestSummaryGenerating,
+} from '../ai/summarizer.js'
+import { closeDb, db } from '../db/client.js'
 import { runMigrations } from '../db/migrate.js'
+import { aiSummaries } from '../db/schema.js'
 import { resetDb } from '../db/test-utils.js'
 import { runEmitter } from '../events.js'
 import { runs } from './routes.js'
 import * as storage from './storage.js'
+
+vi.mock('../ai/summarizer.js', () => ({
+  generateRunSummaries: vi.fn().mockResolvedValue(undefined),
+  markRunSummaryGenerating: vi.fn().mockResolvedValue(true),
+  markTestSummaryGenerating: vi.fn().mockResolvedValue(true),
+}))
 
 let testDir: string
 
@@ -636,5 +648,99 @@ describe('GET /api/runs/:runId/tests/:testId', () => {
     expect(body.testId).toBe('my-test')
     expect(body.title).toBe('my test')
     expect(body.tags).toEqual(['@smoke'])
+  })
+})
+
+const seedRun = (runId: string, status: storage.RunRecord['status'] = 'failed') =>
+  storage.createRun({
+    runId,
+    project: 'p',
+    tags: [],
+    startedAt: '2026-04-20T10:00:00.000Z',
+    status,
+  })
+
+const insertGeneratingSummary = (entityType: 'run' | 'test', entityId: string, runId: string) =>
+  db.insert(aiSummaries).values({
+    entityType,
+    entityId,
+    runId,
+    status: 'generating',
+    provider: 'anthropic',
+    model: 'test-model',
+    content: null,
+    errorMsg: null,
+    generatedAt: null,
+  })
+
+describe('POST /api/runs/:runId/summary/regenerate', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it('returns 404 when run does not exist', async () => {
+    const res = await runs.request('/no-such-run/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 409 when summary status is already generating', async () => {
+    await seedRun('run-1')
+    await insertGeneratingSummary('run', 'run-1', 'run-1')
+    const res = await runs.request('/run-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('already_generating')
+  })
+
+  it('returns 422 when LLM is not configured', async () => {
+    await seedRun('run-1')
+    vi.mocked(markRunSummaryGenerating).mockResolvedValueOnce(false)
+    const res = await runs.request('/run-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(422)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('llm_not_configured')
+  })
+
+  it('calls markRunSummaryGenerating before returning 202', async () => {
+    await seedRun('run-1')
+    const res = await runs.request('/run-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(202)
+    expect(markRunSummaryGenerating).toHaveBeenCalledWith('run-1')
+    expect(generateRunSummaries).toHaveBeenCalledWith('run-1')
+  })
+})
+
+describe('POST /api/runs/:runId/tests/:testId/summary/regenerate', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it('returns 404 when run does not exist', async () => {
+    const res = await runs.request('/no-such-run/tests/test-1/summary/regenerate', {
+      method: 'POST',
+    })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 409 when test summary status is already generating', async () => {
+    await seedRun('run-1')
+    await insertGeneratingSummary('test', 'test-1', 'run-1')
+    const res = await runs.request('/run-1/tests/test-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('already_generating')
+  })
+
+  it('returns 422 when LLM is not configured', async () => {
+    await seedRun('run-1')
+    vi.mocked(markTestSummaryGenerating).mockResolvedValueOnce(false)
+    const res = await runs.request('/run-1/tests/test-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(422)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('llm_not_configured')
+  })
+
+  it('calls markTestSummaryGenerating before returning 202', async () => {
+    await seedRun('run-1')
+    const res = await runs.request('/run-1/tests/test-1/summary/regenerate', { method: 'POST' })
+    expect(res.status).toBe(202)
+    expect(markTestSummaryGenerating).toHaveBeenCalledWith('run-1', 'test-1')
+    expect(generateRunSummaries).toHaveBeenCalledWith('run-1')
   })
 })

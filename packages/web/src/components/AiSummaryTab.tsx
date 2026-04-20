@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   useInvalidateRunSummary,
   useInvalidateTestSummary,
@@ -145,6 +145,14 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
   const qc = useQueryClient()
   const queryKey = ['run-summary', runId]
   const [notice, setNotice] = useState<string | null>(null)
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+    },
+    [],
+  )
 
   const mutation = useMutation({
     mutationFn: () => regenerateRunSummary(runId),
@@ -165,7 +173,8 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
       if (err instanceof Error && err.message === 'HTTP 409') {
         invalidate(runId)
         setNotice('Generation already in progress')
-        setTimeout(() => setNotice(null), 4000)
+        if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+        noticeTimerRef.current = setTimeout(() => setNotice(null), 4000)
         return
       }
       qc.setQueryData(queryKey, snapshot)
@@ -236,6 +245,14 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
   const qc = useQueryClient()
   const queryKey = ['test-summary', runId, testId]
   const [notice, setNotice] = useState<string | null>(null)
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+    },
+    [],
+  )
 
   const mutation = useMutation({
     mutationFn: () => regenerateTestSummary(runId, testId),
@@ -256,7 +273,8 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
       if (err instanceof Error && err.message === 'HTTP 409') {
         invalidate(runId, testId)
         setNotice('Generation already in progress')
-        setTimeout(() => setNotice(null), 4000)
+        if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current)
+        noticeTimerRef.current = setTimeout(() => setNotice(null), 4000)
         return
       }
       qc.setQueryData(queryKey, snapshot)
