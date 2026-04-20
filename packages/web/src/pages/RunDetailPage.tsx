@@ -29,7 +29,10 @@ export default function RunDetailPage() {
         </p>
         <Link
           to="/"
-          className="font-display text-xs font-semibold uppercase tracking-widest text-tn-blue transition-colors hover:text-tn-purple"
+          className={[
+            'font-display text-xs font-semibold uppercase tracking-widest',
+            'text-tn-blue transition-colors hover:text-tn-purple',
+          ].join(' ')}
         >
           ← All runs
         </Link>
