@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import {
   useInvalidateRunSummary,
   useInvalidateTestSummary,
@@ -137,6 +138,64 @@ function EmptyState({ onGenerate, disabled }: { onGenerate: () => void; disabled
   )
 }
 
+function SummaryContent({ content }: { content: string | null }) {
+  if (!content) return null
+  return (
+    <div className="text-sm text-tn-fg leading-relaxed">
+      <ReactMarkdown
+        components={{
+          h1: ({ children }) => (
+            <h1 className="text-lg font-semibold text-tn-fg mt-4 mb-2 first:mt-0">{children}</h1>
+          ),
+          h2: ({ children }) => (
+            <h2 className="text-base font-semibold text-tn-fg mt-4 mb-2 first:mt-0">{children}</h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="text-sm font-semibold text-tn-fg mt-3 mb-1 first:mt-0">{children}</h3>
+          ),
+          p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+          ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+          li: ({ children }) => <li>{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          code: ({ children, className }) => {
+            const isBlock = className?.startsWith('language-')
+            return isBlock ? (
+              <code className="block font-mono text-xs bg-tn-highlight text-tn-fg rounded p-3 mb-3 overflow-x-auto whitespace-pre">
+                {children}
+              </code>
+            ) : (
+              <code className="font-mono text-xs bg-tn-highlight text-tn-fg rounded px-1 py-0.5">
+                {children}
+              </code>
+            )
+          },
+          pre: ({ children }) => <pre className="mb-3">{children}</pre>,
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              className="text-tn-blue underline hover:opacity-80"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {children}
+            </a>
+          ),
+          blockquote: ({ children }) => (
+            <blockquote className="border-l-2 border-tn-border pl-3 text-tn-muted mb-3">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="border-tn-border my-4" />,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
 // -- Run summary tab --
 
 export function RunAiSummaryTab({ runId }: { runId: string }) {
@@ -224,9 +283,7 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
 
   return (
     <div className="rounded-xl border border-tn-border bg-tn-panel p-4">
-      <pre className="whitespace-pre-wrap font-mono text-sm text-tn-fg leading-relaxed">
-        {summary.content}
-      </pre>
+      <SummaryContent content={summary.content} />
       <SummaryFooter
         model={summary.model}
         generatedAt={summary.generatedAt}
@@ -324,9 +381,7 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
 
   return (
     <div className="rounded-xl border border-tn-border bg-tn-panel p-4">
-      <pre className="whitespace-pre-wrap font-mono text-sm text-tn-fg leading-relaxed">
-        {summary.content}
-      </pre>
+      <SummaryContent content={summary.content} />
       <SummaryFooter
         model={summary.model}
         generatedAt={summary.generatedAt}
