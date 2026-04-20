@@ -235,6 +235,8 @@ curl https://your-domain.example.com/api/health
 
 Open your domain in a browser and log in with the `ADMIN_USERNAME` / `ADMIN_PASSWORD` you set.
 
+If you want AI summaries in production, configure the provider API key after login in **Settings -> AI Summaries**. No extra deploy-time environment variables are required beyond a strong `JWT_SECRET`.
+
 ---
 
 ## Maintenance

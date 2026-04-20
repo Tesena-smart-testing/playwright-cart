@@ -6,7 +6,7 @@ A self-hosted dashboard for collecting and viewing Playwright test reports from 
 
 When you run Playwright tests across multiple projects, branches, or CI pipelines, results end up scattered in ephemeral job logs and short-lived HTML report artifacts. playwright-cart gives you a permanent, centralized place to collect and browse them.
 
-It has three parts: a **reporter** npm package you add to your Playwright config, a **server** that receives results during test runs and stores them in PostgreSQL, and a **dashboard** (React SPA) for browsing runs, inspecting individual test results, viewing screenshots and traces, and opening the full Playwright HTML report. Everything is self-hosted — you own your data.
+It has three parts: a **reporter** npm package you add to your Playwright config, a **server** that receives results during test runs and stores them in PostgreSQL, and a **dashboard** (React SPA) for browsing runs, inspecting individual test results, viewing screenshots and traces, opening the full Playwright HTML report, and reading AI-generated summaries for failing runs and tests. Everything is self-hosted — you own your data.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ docker compose up --build
 
 Open `http://localhost` in your browser. Log in with the default credentials: `admin` / `changeme123`.
 
-> **Change the default password and set a strong `JWT_SECRET` before exposing this instance to a network.** See [Configuration](#configuration).
+> **Change the default password and set a strong `JWT_SECRET` before exposing this instance to a network.** `JWT_SECRET` protects session tokens and encrypted AI provider API keys. See [Configuration](#configuration).
 
 To run in the background:
 
@@ -117,6 +117,32 @@ API keys are HMAC-SHA256-hashed with `JWT_SECRET` before storage and can be revo
 
 ## Dashboard
 
+### AI Summary
+
+playwright-cart can generate AI summaries for non-passing runs and tests to speed up failure diagnosis.
+
+- Enable it in **Settings -> AI Summaries**
+- Current shipped provider: `anthropic`
+- Current shipped models: `claude-opus-4-7`, `claude-sonnet-4-6`, `claude-haiku-4-5`
+- The server auto-starts summary generation when a run completes with status `failed`, `interrupted`, or `timedOut`
+- Test summaries are generated first for non-passing tests, then a run summary is generated from those results
+- Users can manually regenerate summaries from the `✦ AI Summary` tab on run and test detail pages
+- When the feature is disabled, the `✦ AI Summary` tab is hidden
+
+### AI Summary setup
+
+1. Sign in as an admin.
+2. Open **Settings -> AI Summaries**.
+3. Enable the feature.
+4. Choose provider and model.
+5. Paste the provider API key and save.
+
+Notes:
+
+- The API key is encrypted at rest in the database using `JWT_SECRET`-derived key material
+- The raw key is never returned by the API; settings only expose `isConfigured`
+- If the server restarts mid-generation, in-progress summaries are marked as `error` and can be regenerated from the UI
+
 ### Annotation-based status inversion (`type: fail`)
 
 The dashboard understands Playwright's [`test.fail()`](https://playwright.dev/docs/api/class-test#test-fail) annotation. When a test carries an annotation with `type: 'fail'`, the dashboard inverts its displayed status:
@@ -152,7 +178,7 @@ cp .env.example .env
 | `DATA_DIR` | `./data` | Directory for binary files: attachments and extracted HTML reports. `docker compose` overrides this to `/app/data`. |
 | `ADMIN_USERNAME` | `admin` | Username for the initial admin account |
 | `ADMIN_PASSWORD` | `changeme123` | Password for the initial admin account — **change in production** |
-| `JWT_SECRET` | *(insecure default)* | Secret for signing JWT session tokens. Generate with `openssl rand -hex 32`. **Must be set in production.** |
+| `JWT_SECRET` | *(insecure default)* | Secret for signing JWT session tokens and encrypting stored AI provider API keys. Generate with `openssl rand -hex 32`. **Must be set in production.** |
 | `NODE_ENV` | `development` | Set to `production` to enable secure (HTTPS-only) cookies |
 | `ALLOWED_ORIGIN` | `http://localhost:5173` | CORS allowed origin for `/api/*`. Set to your dashboard URL in production. |
 
