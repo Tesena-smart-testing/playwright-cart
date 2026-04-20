@@ -29,7 +29,10 @@ function SummaryFooter({
       <button
         type="button"
         onClick={onRegenerate}
-        className="border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg hover:bg-tn-highlight rounded-lg"
+        className={[
+          'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
+          'hover:bg-tn-highlight rounded-lg',
+        ].join(' ')}
       >
         ↺ Regenerate
       </button>
@@ -40,7 +43,12 @@ function SummaryFooter({
 function GeneratingState() {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-tn-border bg-tn-panel p-4">
-      <div className="h-4 w-4 animate-spin rounded-full border-2 border-tn-blue border-t-transparent shrink-0" />
+      <div
+        className={[
+          'h-4 w-4 animate-spin rounded-full border-2 border-tn-blue',
+          'border-t-transparent shrink-0',
+        ].join(' ')}
+      />
       <p className="font-mono text-sm text-tn-fg">Generating summary…</p>
     </div>
   )
@@ -56,7 +64,10 @@ function ErrorState({ message, onRetry }: { message: string | null; onRetry: () 
       <button
         type="button"
         onClick={onRetry}
-        className="border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg hover:bg-tn-highlight rounded-lg"
+        className={[
+          'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
+          'hover:bg-tn-highlight rounded-lg',
+        ].join(' ')}
       >
         ↺ Retry
       </button>
@@ -74,7 +85,10 @@ function EmptyState({ onGenerate }: { onGenerate: () => void }) {
       <button
         type="button"
         onClick={onGenerate}
-        className="border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg hover:bg-tn-highlight rounded-lg"
+        className={[
+          'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
+          'hover:bg-tn-highlight rounded-lg',
+        ].join(' ')}
       >
         Generate now
       </button>
@@ -98,6 +112,9 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
     es.addEventListener('summary_run_error', (e) => {
       const data = JSON.parse(e.data) as { runId: string }
       if (data.runId === runId) invalidate(runId)
+    })
+    es.addEventListener('error', () => {
+      es.close()
     })
     return () => es.close()
   }, [runId, invalidate])
@@ -150,6 +167,9 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
     es.addEventListener('summary_test_error', (e) => {
       const data = JSON.parse(e.data) as { runId: string; testId: string }
       if (data.runId === runId && data.testId === testId) invalidate(runId, testId)
+    })
+    es.addEventListener('error', () => {
+      es.close()
     })
     return () => es.close()
   }, [runId, testId, invalidate])
