@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@anthropic-ai/sdk', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    messages: {
-      create: vi.fn().mockResolvedValue({
-        content: [{ type: 'text', text: 'Test failed due to timeout in payment flow.' }],
-      }),
-    },
-  })),
+  default: vi.fn().mockImplementation(function () {
+    return {
+      messages: {
+        create: vi.fn().mockResolvedValue({
+          content: [{ type: 'text', text: 'Test failed due to timeout in payment flow.' }],
+        }),
+      },
+    }
+  }),
 }))
 
 import { AnthropicProvider } from './anthropic.js'
@@ -39,7 +41,9 @@ describe('AnthropicProvider', () => {
     const mockCreate = vi.fn().mockResolvedValue({
       content: [{ type: 'text', text: 'summary' }],
     })
-    vi.mocked(Anthropic).mockImplementation(() => ({ messages: { create: mockCreate } }) as never)
+    vi.mocked(Anthropic).mockImplementation(function () {
+      return { messages: { create: mockCreate } } as never
+    })
 
     const p = new AnthropicProvider()
     await p.generateSummary({
