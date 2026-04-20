@@ -1,8 +1,11 @@
+import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { RunAiSummaryTab } from '../components/AiSummaryTab.js'
 import RunHeader from '../components/RunHeader.js'
 import RunStats from '../components/RunStats.js'
 import SuiteGroup, { type SuiteTreeNode } from '../components/SuiteGroup.js'
 import TagFilter from '../components/TagFilter.js'
+import { useLlmSettings } from '../hooks/useLlmSettings.js'
 import { useRun } from '../hooks/useRun.js'
 import type { AnnotatedRunWithTests, AnnotatedTestRecord } from '../lib/api.js'
 import { annotateRetriedTests } from '../lib/retries.js'
@@ -12,6 +15,9 @@ export default function RunDetailPage() {
   const { runId } = useParams<{ runId: string }>()
   const [params, setParams] = useSearchParams()
   const { data: run, isLoading, error } = useRun(runId ?? '')
+  const { data: llmSettings } = useLlmSettings()
+  const llmEnabled = llmSettings?.enabled ?? false
+  const [activeTab, setActiveTab] = useState<'tests' | 'summary'>('tests')
 
   if (isLoading) return <Skeleton />
 
@@ -72,28 +78,62 @@ export default function RunDetailPage() {
         />
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-tn-border mb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab('tests')}
+          className={[
+            'px-4 py-2 font-display text-xs font-semibold uppercase tracking-widest',
+            activeTab === 'tests'
+              ? 'border-b-2 border-tn-blue text-tn-blue'
+              : 'text-tn-muted hover:text-tn-fg',
+          ].join(' ')}
+        >
+          Tests
+        </button>
+        {llmEnabled && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('summary')}
+            className={[
+              'px-4 py-2 font-display text-xs font-semibold uppercase tracking-widest',
+              activeTab === 'summary'
+                ? 'border-b-2 border-tn-blue text-tn-blue'
+                : 'text-tn-muted hover:text-tn-fg',
+            ].join(' ')}
+          >
+            ✦ AI Summary
+          </button>
+        )}
+      </div>
+
+      {/* AI Summary tab */}
+      {activeTab === 'summary' && llmEnabled && run && <RunAiSummaryTab runId={run.runId} />}
+
       {/* Suite tree */}
-      {filteredTests.length === 0 ? (
-        <p className="py-8 text-center font-mono text-sm text-tn-muted">
-          {annotatedRun.tests.length === 0
-            ? 'No test results uploaded yet.'
-            : 'No suites or tests match current tag filters.'}
-        </p>
-      ) : (
-        <div className="space-y-3">
-          {[...suites.entries()].map(([name, node]) => (
-            <SuiteGroup
-              key={name}
-              runId={run.runId}
-              name={name}
-              node={node}
-              path={[name]}
-              defaultOpenPaths={defaultOpenPaths}
-              selectedTags={selectedTags}
-            />
-          ))}
-        </div>
-      )}
+      {activeTab === 'tests' &&
+        (filteredTests.length === 0 ? (
+          <p className="py-8 text-center font-mono text-sm text-tn-muted">
+            {annotatedRun.tests.length === 0
+              ? 'No test results uploaded yet.'
+              : 'No suites or tests match current tag filters.'}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {[...suites.entries()].map(([name, node]) => (
+              <SuiteGroup
+                key={name}
+                runId={run.runId}
+                name={name}
+                node={node}
+                path={[name]}
+                defaultOpenPaths={defaultOpenPaths}
+                selectedTags={selectedTags}
+              />
+            ))}
+          </div>
+        ))}
     </div>
   )
 }
