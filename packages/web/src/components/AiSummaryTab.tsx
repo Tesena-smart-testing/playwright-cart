@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import {
   useInvalidateRunSummary,
@@ -13,10 +14,12 @@ function SummaryFooter({
   model,
   generatedAt,
   onRegenerate,
+  disabled,
 }: {
   model: string
   generatedAt: string | null
   onRegenerate: () => void
+  disabled?: boolean
 }) {
   const age = generatedAt ? new Date(generatedAt).toLocaleString() : null
 
@@ -29,12 +32,21 @@ function SummaryFooter({
       <button
         type="button"
         onClick={onRegenerate}
+        disabled={disabled}
         className={[
           'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
           'hover:bg-tn-highlight rounded-lg',
+          'disabled:cursor-not-allowed disabled:opacity-60',
         ].join(' ')}
       >
-        ↺ Regenerate
+        {disabled ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-3 animate-spin rounded-full border border-tn-fg border-t-transparent" />
+            Regenerating…
+          </span>
+        ) : (
+          '↺ Regenerate'
+        )}
       </button>
     </div>
   )
@@ -54,7 +66,15 @@ function GeneratingState() {
   )
 }
 
-function ErrorState({ message, onRetry }: { message: string | null; onRetry: () => void }) {
+function ErrorState({
+  message,
+  onRetry,
+  disabled,
+}: {
+  message: string | null
+  onRetry: () => void
+  disabled?: boolean
+}) {
   return (
     <div className="rounded-xl border border-tn-red bg-tn-panel p-4">
       <p className="font-mono text-sm font-semibold text-tn-red mb-1">
@@ -64,18 +84,27 @@ function ErrorState({ message, onRetry }: { message: string | null; onRetry: () 
       <button
         type="button"
         onClick={onRetry}
+        disabled={disabled}
         className={[
           'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
           'hover:bg-tn-highlight rounded-lg',
+          'disabled:cursor-not-allowed disabled:opacity-60',
         ].join(' ')}
       >
-        ↺ Retry
+        {disabled ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-3 animate-spin rounded-full border border-tn-fg border-t-transparent" />
+            Retrying…
+          </span>
+        ) : (
+          '↺ Retry'
+        )}
       </button>
     </div>
   )
 }
 
-function EmptyState({ onGenerate }: { onGenerate: () => void }) {
+function EmptyState({ onGenerate, disabled }: { onGenerate: () => void; disabled?: boolean }) {
   return (
     <div className="rounded-xl border border-dashed border-tn-border bg-tn-panel p-6 text-center">
       <p className="font-mono text-sm text-tn-muted mb-1">No summary available</p>
@@ -85,12 +114,21 @@ function EmptyState({ onGenerate }: { onGenerate: () => void }) {
       <button
         type="button"
         onClick={onGenerate}
+        disabled={disabled}
         className={[
           'border border-tn-border px-3 py-1 font-mono text-xs text-tn-fg',
           'hover:bg-tn-highlight rounded-lg',
+          'disabled:cursor-not-allowed disabled:opacity-60',
         ].join(' ')}
       >
-        Generate now
+        {disabled ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-3 animate-spin rounded-full border border-tn-fg border-t-transparent" />
+            Generating…
+          </span>
+        ) : (
+          'Generate now'
+        )}
       </button>
     </div>
   )
@@ -101,6 +139,11 @@ function EmptyState({ onGenerate }: { onGenerate: () => void }) {
 export function RunAiSummaryTab({ runId }: { runId: string }) {
   const { data: summary, isLoading } = useRunSummary(runId)
   const invalidate = useInvalidateRunSummary()
+
+  const mutation = useMutation({
+    mutationFn: () => regenerateRunSummary(runId),
+    onSuccess: () => invalidate(runId),
+  })
 
   // SSE: invalidate on summary_run_done / summary_run_error
   useEffect(() => {
@@ -122,9 +165,7 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
   if (isLoading) return <GeneratingState />
 
   if (!summary)
-    return (
-      <EmptyState onGenerate={() => regenerateRunSummary(runId).then(() => invalidate(runId))} />
-    )
+    return <EmptyState onGenerate={() => mutation.mutate()} disabled={mutation.isPending} />
 
   if (summary.status === 'generating' || summary.status === 'pending') return <GeneratingState />
 
@@ -132,7 +173,8 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
     return (
       <ErrorState
         message={summary.errorMsg}
-        onRetry={() => regenerateRunSummary(runId).then(() => invalidate(runId))}
+        onRetry={() => mutation.mutate()}
+        disabled={mutation.isPending}
       />
     )
   }
@@ -145,7 +187,8 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
       <SummaryFooter
         model={summary.model}
         generatedAt={summary.generatedAt}
-        onRegenerate={() => regenerateRunSummary(runId).then(() => invalidate(runId))}
+        onRegenerate={() => mutation.mutate()}
+        disabled={mutation.isPending}
       />
     </div>
   )
@@ -156,6 +199,11 @@ export function RunAiSummaryTab({ runId }: { runId: string }) {
 export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: string }) {
   const { data: summary, isLoading } = useTestSummary(runId, testId)
   const invalidate = useInvalidateTestSummary()
+
+  const mutation = useMutation({
+    mutationFn: () => regenerateTestSummary(runId, testId),
+    onSuccess: () => invalidate(runId, testId),
+  })
 
   // SSE: invalidate on summary_test_done / summary_test_error matching this test
   useEffect(() => {
@@ -177,13 +225,7 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
   if (isLoading) return <GeneratingState />
 
   if (!summary)
-    return (
-      <EmptyState
-        onGenerate={() =>
-          regenerateTestSummary(runId, testId).then(() => invalidate(runId, testId))
-        }
-      />
-    )
+    return <EmptyState onGenerate={() => mutation.mutate()} disabled={mutation.isPending} />
 
   if (summary.status === 'generating' || summary.status === 'pending') return <GeneratingState />
 
@@ -191,7 +233,8 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
     return (
       <ErrorState
         message={summary.errorMsg}
-        onRetry={() => regenerateTestSummary(runId, testId).then(() => invalidate(runId, testId))}
+        onRetry={() => mutation.mutate()}
+        disabled={mutation.isPending}
       />
     )
   }
@@ -204,9 +247,8 @@ export function TestAiSummaryTab({ runId, testId }: { runId: string; testId: str
       <SummaryFooter
         model={summary.model}
         generatedAt={summary.generatedAt}
-        onRegenerate={() =>
-          regenerateTestSummary(runId, testId).then(() => invalidate(runId, testId))
-        }
+        onRegenerate={() => mutation.mutate()}
+        disabled={mutation.isPending}
       />
     </div>
   )
