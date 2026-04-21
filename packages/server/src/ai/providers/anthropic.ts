@@ -1,4 +1,14 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Anthropic, {
+  APIConnectionError,
+  APIConnectionTimeoutError,
+  APIError,
+  AuthenticationError,
+  BadRequestError,
+  InternalServerError,
+  PermissionDeniedError,
+  RateLimitError,
+} from '@anthropic-ai/sdk'
+import { ProviderError } from '../errors.js'
 import type { LLMProvider } from './types.js'
 
 export class AnthropicProvider implements LLMProvider {
@@ -31,14 +41,27 @@ export class AnthropicProvider implements LLMProvider {
       { type: 'text', text: opts.prompt },
     ]
 
-    const msg = await client.messages.create({
-      model: opts.model,
-      max_tokens: 1024,
-      messages: [{ role: 'user', content }],
-    })
+    try {
+      const msg = await client.messages.create({
+        model: opts.model,
+        max_tokens: 1024,
+        messages: [{ role: 'user', content }],
+      })
 
-    const text = msg.content.find((b) => b.type === 'text')
-    if (!text || text.type !== 'text') throw new Error('No text in Anthropic response')
-    return text.text
+      const text = msg.content.find((b) => b.type === 'text')
+      if (!text || text.type !== 'text') throw new ProviderError('unknown')
+      return text.text
+    } catch (err) {
+      if (err instanceof ProviderError) throw err
+      if (err instanceof AuthenticationError) throw new ProviderError('auth')
+      if (err instanceof PermissionDeniedError) throw new ProviderError('permission')
+      if (err instanceof RateLimitError) throw new ProviderError('rate_limit')
+      if (err instanceof InternalServerError) throw new ProviderError('server_error')
+      if (err instanceof APIConnectionTimeoutError) throw new ProviderError('connection_timeout')
+      if (err instanceof APIConnectionError) throw new ProviderError('connection')
+      if (err instanceof BadRequestError) throw new ProviderError('bad_request')
+      if (err instanceof APIError) throw new ProviderError('unknown')
+      throw new ProviderError('unknown')
+    }
   }
 }
