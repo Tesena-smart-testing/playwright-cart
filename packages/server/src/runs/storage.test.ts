@@ -1,16 +1,16 @@
 import { mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { closeDb } from '../db/client.js'
-import { runMigrations } from '../db/migrate.js'
-import { resetDb } from '../db/test-utils.js'
+import { resetDb, startTestDatabase, stopTestDatabase } from '../db/test-utils.js'
 import * as storage from './storage.js'
 
 let testDir: string
+let container: StartedPostgreSqlContainer
 
 beforeAll(async () => {
-  await runMigrations()
+  container = await startTestDatabase()
 })
 
 beforeEach(async () => {
@@ -25,7 +25,7 @@ afterEach(() => {
 })
 
 afterAll(async () => {
-  await closeDb()
+  await stopTestDatabase(container)
 })
 
 describe('createRun / getRun', () => {

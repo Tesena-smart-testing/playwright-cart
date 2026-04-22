@@ -1,16 +1,16 @@
 import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   generateRunSummaries,
   markRunSummaryGenerating,
   markTestSummaryGenerating,
 } from '../ai/summarizer.js'
-import { closeDb, db } from '../db/client.js'
-import { runMigrations } from '../db/migrate.js'
+import { db } from '../db/client.js'
 import { aiSummaries } from '../db/schema.js'
-import { resetDb } from '../db/test-utils.js'
+import { resetDb, startTestDatabase, stopTestDatabase } from '../db/test-utils.js'
 import { runEmitter } from '../events.js'
 import { runs } from './routes.js'
 import * as storage from './storage.js'
@@ -22,9 +22,10 @@ vi.mock('../ai/summarizer.js', () => ({
 }))
 
 let testDir: string
+let container: StartedPostgreSqlContainer
 
 beforeAll(async () => {
-  await runMigrations()
+  container = await startTestDatabase()
 })
 
 beforeEach(async () => {
@@ -39,7 +40,7 @@ afterEach(() => {
 })
 
 afterAll(async () => {
-  await closeDb()
+  await stopTestDatabase(container)
 })
 
 describe('POST /api/runs', () => {

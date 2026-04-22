@@ -1,16 +1,18 @@
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { app } from './app.js'
 import { hashPassword, signToken } from './auth/utils.js'
-import { closeDb, db } from './db/client.js'
-import { runMigrations } from './db/migrate.js'
+import { db } from './db/client.js'
 import { users } from './db/schema.js'
+import { startTestDatabase, stopTestDatabase } from './db/test-utils.js'
 import { runEmitter } from './events.js'
 
 let authCookie: string
+let container: StartedPostgreSqlContainer
 
 beforeAll(async () => {
   process.env.JWT_SECRET = 'test-secret-for-app-tests'
-  await runMigrations()
+  container = await startTestDatabase()
   const [user] = await db
     .insert(users)
     .values({
@@ -29,7 +31,7 @@ afterEach(() => {
 })
 
 afterAll(async () => {
-  await closeDb()
+  await stopTestDatabase(container)
 })
 
 async function readNextChunk(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<string> {

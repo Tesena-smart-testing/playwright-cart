@@ -1,18 +1,19 @@
+import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { closeDb } from '../db/client.js'
-import { runMigrations } from '../db/migrate.js'
-import { resetDb } from '../db/test-utils.js'
+import { resetDb, startTestDatabase, stopTestDatabase } from '../db/test-utils.js'
 import * as runsStorage from '../runs/storage.js'
 import { testsRouter } from './routes.js'
 
+let container: StartedPostgreSqlContainer
+
 beforeAll(async () => {
-  await runMigrations()
+  container = await startTestDatabase()
 })
 beforeEach(async () => {
   await resetDb()
 })
 afterAll(async () => {
-  await closeDb()
+  await stopTestDatabase(container)
 })
 
 async function seedTestInRun(
