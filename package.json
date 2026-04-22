@@ -7,7 +7,8 @@
     "build": "turbo run build",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "test:unit": "turbo run test --filter=!@playwright-cart/e2e"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
