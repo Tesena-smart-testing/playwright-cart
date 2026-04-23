@@ -112,16 +112,12 @@ export default function ChartDetailPage() {
   const [searchParams] = useSearchParams()
   const { data: meta } = useRunsMeta()
 
-  const urlFilter: FilterValue = {
-    project: searchParams.get('project') ?? undefined,
-    branch: searchParams.get('branch') ?? undefined,
-  }
-  const hasUrlFilter = !!(urlFilter.project || urlFilter.branch)
-
   const [controls, setControls] = useState<ControlsValue>(readStoredDetailControls)
-  const [filter, setFilter] = useState<FilterValue>(
-    hasUrlFilter ? urlFilter : readStoredDetailFilter,
-  )
+  const [filter, setFilter] = useState<FilterValue>(() => {
+    const project = searchParams.get('project') ?? undefined
+    const branch = searchParams.get('branch') ?? undefined
+    return project || branch ? { project, branch } : readStoredDetailFilter()
+  })
 
   const validId = chartId as ChartId
   const config = getChartConfig(validId)

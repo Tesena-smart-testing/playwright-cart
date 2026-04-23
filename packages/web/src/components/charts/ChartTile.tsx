@@ -91,7 +91,7 @@ export default function ChartTile({ id, buckets, isLoading, filter }: Props) {
     const q = new URLSearchParams()
     if (filter?.project) q.set('project', filter.project)
     if (filter?.branch) q.set('branch', filter.branch)
-    const qs = q.size > 0 ? `?${q}` : ''
+    const qs = q.toString() ? `?${q}` : ''
     navigate(config.path + qs)
   }
 
