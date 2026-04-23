@@ -1,9 +1,17 @@
 export function fmtRunDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
 export function fmtRunDatetime(iso: string): string {
-  return new Date(iso).toLocaleString('sv-SE').slice(0, 19)
+  return new Date(iso).toLocaleString(undefined, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
 }
 
 export const CHART_CONFIGS = [
