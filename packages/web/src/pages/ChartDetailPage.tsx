@@ -209,7 +209,7 @@ export default function ChartDetailPage() {
         {isLoading ? (
           <div className="h-[240px] animate-pulse rounded bg-tn-highlight" />
         ) : validId === 'duration' ? (
-          <DurationChart data={buckets} height={240} />
+          <DurationChart data={buckets} height={240} interval={controls.interval} />
         ) : (
           <TrendChart
             data={buckets}
@@ -218,6 +218,7 @@ export default function ChartDetailPage() {
             formatValue={detail.formatValue}
             label={config.label}
             height={240}
+            interval={controls.interval}
           />
         )}
       </div>

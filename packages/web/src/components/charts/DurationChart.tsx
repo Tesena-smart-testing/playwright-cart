@@ -8,7 +8,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import type { TimelineBucket } from '../../lib/api.js'
+import type { TimelineBucket, TimelineInterval } from '../../lib/api.js'
+import { fmtRunDate, fmtRunDatetime } from '../../lib/charts.js'
 
 function fmtMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`
@@ -19,11 +20,13 @@ function fmtMs(ms: number): string {
 interface Props {
   data: TimelineBucket[]
   height?: number
+  interval?: TimelineInterval
 }
 
-export default function DurationChart({ data, height = 240 }: Props) {
+export default function DurationChart({ data, height = 240, interval }: Props) {
   const chartData = data.map((b) => ({
     key: b.key,
+    startedAt: b.startedAt,
     avg: b.avgDurationMs,
     p95: b.p95DurationMs,
   }))
@@ -33,11 +36,11 @@ export default function DurationChart({ data, height = 240 }: Props) {
       <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-tn-border)" vertical={false} />
         <XAxis
-          dataKey="key"
+          dataKey={interval === 'run' ? 'startedAt' : 'key'}
           tick={{ fill: 'var(--color-tn-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => v.slice(0, 10)}
+          tickFormatter={(v: string) => (interval === 'run' ? fmtRunDate(v) : v.slice(0, 10))}
         />
         <YAxis
           tick={{ fill: 'var(--color-tn-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
@@ -54,7 +57,13 @@ export default function DurationChart({ data, height = 240 }: Props) {
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
           }}
-          labelFormatter={(v: unknown) => (typeof v === 'string' ? v.slice(0, 10) : String(v))}
+          labelFormatter={(v: unknown) =>
+            typeof v === 'string'
+              ? interval === 'run'
+                ? fmtRunDatetime(v)
+                : v.slice(0, 10)
+              : String(v)
+          }
           formatter={(v: unknown, name: unknown) => [
             fmtMs(typeof v === 'number' ? v : 0),
             name === 'avg' ? 'Avg' : 'p95',

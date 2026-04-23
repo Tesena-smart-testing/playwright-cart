@@ -1,3 +1,11 @@
+export function fmtRunDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+export function fmtRunDatetime(iso: string): string {
+  return new Date(iso).toLocaleString('sv-SE').slice(0, 19)
+}
+
 export const CHART_CONFIGS = [
   {
     id: 'pass-rate',

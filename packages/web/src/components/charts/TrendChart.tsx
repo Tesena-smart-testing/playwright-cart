@@ -1,5 +1,6 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import type { TimelineBucket } from '../../lib/api.js'
+import type { TimelineBucket, TimelineInterval } from '../../lib/api.js'
+import { fmtRunDate, fmtRunDatetime } from '../../lib/charts.js'
 
 interface Props {
   data: TimelineBucket[]
@@ -8,6 +9,7 @@ interface Props {
   formatValue?: (v: number) => string
   label: string
   height?: number
+  interval?: TimelineInterval
 }
 
 export default function TrendChart({
@@ -17,6 +19,7 @@ export default function TrendChart({
   formatValue = (v) => String(v),
   label,
   height = 240,
+  interval,
 }: Props) {
   const chartData = data.map((b) => ({
     key: b.key,
@@ -29,11 +32,11 @@ export default function TrendChart({
       <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-tn-border)" vertical={false} />
         <XAxis
-          dataKey="key"
+          dataKey={interval === 'run' ? 'startedAt' : 'key'}
           tick={{ fill: 'var(--color-tn-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(v: string) => v.slice(0, 10)}
+          tickFormatter={(v: string) => (interval === 'run' ? fmtRunDate(v) : v.slice(0, 10))}
         />
         <YAxis
           tick={{ fill: 'var(--color-tn-muted)', fontSize: 10, fontFamily: 'var(--font-mono)' }}
@@ -50,7 +53,13 @@ export default function TrendChart({
             fontFamily: 'var(--font-mono)',
             fontSize: 11,
           }}
-          labelFormatter={(v: unknown) => (typeof v === 'string' ? v.slice(0, 10) : String(v))}
+          labelFormatter={(v: unknown) =>
+            typeof v === 'string'
+              ? interval === 'run'
+                ? fmtRunDatetime(v)
+                : v.slice(0, 10)
+              : String(v)
+          }
           formatter={(v: unknown) => [formatValue(typeof v === 'number' ? v : 0), label]}
           cursor={{ fill: 'var(--color-tn-highlight)' }}
         />
